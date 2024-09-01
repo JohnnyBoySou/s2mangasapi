@@ -53,6 +53,11 @@ class UserController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => bcrypt($request->password),
+                'avatar' => $request->avatar,
+                'capa' => $request->capa,
+                'bio' => $request->bio,
+                'languages' => $request->languages,
+                'collections' => json_encode($request->collections), // Converte o array em JSON
             ]);
 
             //confirma cadastro
@@ -69,6 +74,7 @@ class UserController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Falha ao criar o usuário',
+                'e' => $e
             ], 400);
         }
 

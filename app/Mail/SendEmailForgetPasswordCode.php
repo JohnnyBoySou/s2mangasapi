@@ -16,7 +16,7 @@ class SendEmailForgetPasswordCode extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct(public $user, public $code, public $formattedDate, public $formattedTime, )
     {
         //
     }
@@ -27,7 +27,7 @@ class SendEmailForgetPasswordCode extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Send Email Forget Password Code',
+            subject: 'Recuperar senha de acesso.',
         );
     }
 
@@ -37,7 +37,8 @@ class SendEmailForgetPasswordCode extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.sendEmailHtmlForgetPasswordCode',
+            text: 'emails.sendEmailTextForgetPasswordCode',
         );
     }
 

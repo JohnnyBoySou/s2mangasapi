@@ -31,7 +31,9 @@ class UserRequest extends FormRequest
         return [
             'name' => 'required',
             'email' => 'required|email|unique:users,email,' . ($userID ? $userID->id : null),
-            'password' => 'required|min:8'
+            'password' => 'required|min:8',
+            'avatar' => 'required',
+            'capa' => 'required',
         ];
     }
 
@@ -44,6 +46,8 @@ class UserRequest extends FormRequest
             'email.unique' => 'O e-mail informado já existe',
             'password.required' => 'A senha é obrigatória',
             'password.min' => 'A senha deve ter pelo menos :min caracteres',
+            'avatar.required' => 'O avatar é obrigatória',
+            'capa.required' => 'A capa é obrigatória',
         ];
     }
 }

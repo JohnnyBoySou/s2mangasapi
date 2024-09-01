@@ -106,7 +106,7 @@ class CollectionsController extends Controller
             'message' => 'Usuário editado com sucesso',
         ], 200);
 
-    }
+    } 
 
 
     public function destroy(User $user): JsonResponse
