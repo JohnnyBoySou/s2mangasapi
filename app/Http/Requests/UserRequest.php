@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Auth;
 
 class UserRequest extends FormRequest
 {
@@ -27,13 +28,17 @@ class UserRequest extends FormRequest
 
     public function rules(): array
     {
-        $userID = $this->route('user');
+        $userID = Auth::id();
+    
+        // Verifica se estamos criando ou editando
+        $isUpdate = isset($userID);
+    
         return [
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . ($userID ? $userID->id : null),
-            'password' => 'required|min:8',
-            'avatar' => 'required',
-            'capa' => 'required',
+            'name' => $isUpdate ? 'nullable' : 'required',
+            'email' => $isUpdate ? 'nullable|email' : 'required|email|unique:users,email,' . ($isUpdate ? $userID : null),
+            'password' => $isUpdate ? 'nullable|min:8' : 'required|min:8',  // Senha obrigatória apenas na criação
+            'avatar' => $isUpdate ? 'nullable' : 'required',  // Avatar não obrigatório na edição
+            'capa' => $isUpdate ? 'nullable' : 'required',    // Capa não obrigatória na edição
         ];
     }
 

@@ -8,6 +8,7 @@ use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -56,19 +57,27 @@ class UserController extends Controller
                 'avatar' => $request->avatar,
                 'capa' => $request->capa,
                 'bio' => $request->bio,
-                'languages' => $request->languages,
+                'languages' => json_encode($request->languages),
                 'collections' => json_encode($request->collections), // Converte o array em JSON
             ]);
 
             //confirma cadastro
             DB::commit();
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Usuário criado com sucesso',
-                'user' => $user,
-            ], 201);
-
+            if (Auth::attempt(["email" => $request->email, "password" => $request->password])) {
+                $token = $user->createToken('auth_token')->plainTextToken;
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Usuário criado com sucesso',
+                    'user' => $user,
+                    'token' => $token
+                ], 201);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Falha ao criar o usuário',
+                ], 400);
+            }
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -80,24 +89,25 @@ class UserController extends Controller
 
 
     }
-
-
-    public function update(UserRequest $request, User $user): JsonResponse
+    public function update(UserRequest $request): JsonResponse
     {
         /*
          * Atualiza um usuário com os campos definidos na model $fillable
          * E retorna os dados do novo usuário, tratamentos de erro em UserRequest, requests/UserRequests
-         * @param \App\Models\User
-         * @return \Illuminate\Http\JsonResponse
          */
+        $user = Auth::user(); // Pega o usuário autenticado pelo token
         DB::beginTransaction();
+
         try {
-            $user->update([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => bcrypt($request->password),
-            ]);
+            // Atualiza apenas os campos que estão no $fillable da Model User
+            $user->update($request->only($user->getFillable()));
+
             DB::commit();
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+                'message' => 'Usuário editado com sucesso',
+            ], 200);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -106,14 +116,7 @@ class UserController extends Controller
             ], 400);
         }
 
-        return response()->json([
-            'status' => true,
-            'user' => $user,
-            'message' => 'Usuário editado com sucesso',
-        ], 200);
-
     }
-
 
     public function destroy(User $user): JsonResponse
     {
