@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ForgetPasswordRequest;
+use App\Http\Requests\ResetPasswordCodeRequest;
+use App\Http\Requests\ResetPasswordValidateCodeRequest;
 use App\Mail\SendEmailForgetPasswordCode;
 use App\Models\User;
+use App\Service\ResetPasswordValidateCodeService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -74,7 +77,7 @@ class RecoveryPassword extends Controller
 
 
     }
-   /*
+   
     public function forgetPasswordValidate(resetPasswordValidateCodeRequest $request, ResetPasswordValidateCodeService $resetPasswordValidateCode): JsonResponse
     {
         try {
@@ -204,5 +207,5 @@ class RecoveryPassword extends Controller
 
         }
     }
-*/
+
 }

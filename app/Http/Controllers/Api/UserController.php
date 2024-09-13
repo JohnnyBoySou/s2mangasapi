@@ -13,33 +13,7 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
 
-    public function index(): JsonResponse
-    {
-        /*
-         * Retorna uma lista paginada de usuários
-         * @return \Illuminate\Http\JsonResponse
-         */
-        $users = User::orderBy('id', 'DESC')->paginate(15);
-        return response()->json([
-            'status' => true,
-            'message' => $users,
-        ], 200);
-    }
-
-    public function show(User $user): JsonResponse
-    {
-        /*
-         * Retorna um usuário pelo ID
-         * @param \App\Models\User
-         * @return \Illuminate\Http\JsonResponse
-         */
-        return response()->json([
-            'status' => true,
-            'user' => $user,
-        ], 200);
-    }
-
-    public function store(UserRequest $request): JsonResponse
+    public function register(UserRequest $request): JsonResponse
     {
         /*
          * Cria um usuário com os campos definidos na model $fillable
@@ -59,6 +33,7 @@ class UserController extends Controller
                 'bio' => $request->bio,
                 'languages' => json_encode($request->languages),
                 'collections' => json_encode($request->collections), // Converte o array em JSON
+                'genres' => json_encode($request->genres), // Converte o array em JSON
             ]);
 
             //confirma cadastro
@@ -89,42 +64,42 @@ class UserController extends Controller
 
 
     }
+    public function index(): JsonResponse
+    {
+        $user = Auth::user();
+        return response()->json([
+            'status' => true,
+            'user' => $user,
+        ], 200);
+    }
+
     public function update(UserRequest $request): JsonResponse
     {
-        /*
-         * Atualiza um usuário com os campos definidos na model $fillable
-         * E retorna os dados do novo usuário, tratamentos de erro em UserRequest, requests/UserRequests
-         */
-        $user = Auth::user(); // Pega o usuário autenticado pelo token
+        $user = Auth::user(); 
         DB::beginTransaction();
 
         try {
-            // Atualiza apenas os campos que estão no $fillable da Model User
             $user->update($request->only($user->getFillable()));
 
             DB::commit();
             return response()->json([
                 'status' => true,
                 'user' => $user,
-                'message' => 'Usuário editado com sucesso',
+                'message' => 'Usuário editado com sucesso!',
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Falha ao editar o usuário',
+                'message' => 'Falha ao editar o usuário.',
             ], 400);
         }
 
     }
 
-    public function destroy(User $user): JsonResponse
+    public function destroy(): JsonResponse
     {
-        /*
-         * Exclui um usuário conforme o id enviado por User $user 
-         * @param \App\Models\User
-         * @return \Illuminate\Http\JsonResponse
-         */
+        $user = Auth::user();
         try {
             $user->delete();
             return response()->json([

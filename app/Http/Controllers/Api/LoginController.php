@@ -41,9 +41,10 @@ class LoginController extends Controller
             ], 401);
         }
     }
-    public function logout(User $user): JsonResponse
+    public function logout(): JsonResponse
     {
         try {
+            $user = Auth::user();
             $user->tokens()->delete();
             return response()->json([
                 'status' => true,
