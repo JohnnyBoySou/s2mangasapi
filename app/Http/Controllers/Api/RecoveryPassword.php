@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -77,7 +78,7 @@ class RecoveryPassword extends Controller
 
 
     }
-   
+
     public function forgetPasswordValidate(resetPasswordValidateCodeRequest $request, ResetPasswordValidateCodeService $resetPasswordValidateCode): JsonResponse
     {
         try {
@@ -114,7 +115,7 @@ class RecoveryPassword extends Controller
             }
 
             // Salvar log
-            Log::info('Código recuperar senha válido.', ['email' => $request->email]);
+            Log::info('Código válido.', ['email' => $request->email]);
 
             return response()->json([
                 'status' => true,
@@ -132,80 +133,72 @@ class RecoveryPassword extends Controller
             ], 400);
         }
     }
-    public function resetPassword(ResetPasswordCodeRequest $request, ResetPasswordValidateCodeService $resetPasswordValidateCode) : JsonResponse
-    { {
-
-            try {
-
-                // Validar o código do token
-                $validationResult = $resetPasswordValidateCode->resetPasswordValidateCode($request->email, $request->code);
-
-                // Verificar o resultado da validação
-                if (!$validationResult['status']) {
-
-                    // Exibir mensagem de erro
-                    return response()->json([
-                        'status' => false,
-                        'message' => $validationResult['message'],
-                    ], 400);
-
-                }
-
-                // Recuperar os dados do usuário
-                $user = User::where('email', $request->email)->first();
-
-                // Verificar existe o usuário no banco de dados
-                if (!$user) {
-
-                    // Salvar log
-                    Log::notice('Usuário não encontrado.', ['email' => $request->email]);
-
-                    // Exibir mensagem de erro
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Usuário não encontrado!',
-                    ], 400);
-
-                }
-
-                // Alterar a senha do usuário no banco de dados
-                $user->update([
-                    'password' => Hash::make($request->password)
-                ]);
-
-                // gerar o token 
-                $token = $user->first()->createToken('api-token')->plainTextToken;
-
-                // Recuperar os registros recuperar senha do usuário
-                $userPasswordResets = DB::table('password_reset_tokens')->where('email', $request->email);
-
-                // Se existir token cadastrado para o usuário recuperar senha, excluir o mesmo
-                if ($userPasswordResets) {
-                    $userPasswordResets->delete();
-                }
-
-                // Salvar log
-                Log::info('Senha atualizada com sucesso.', ['email' => $request->email]);
-
+    public function resetPassword(ResetPasswordCodeRequest $request, ResetPasswordValidateCodeService $resetPasswordValidateCode): JsonResponse
+    {
+        try {
+            // Validar o código de redefinição
+            $validationResult = $resetPasswordValidateCode->resetPasswordValidateCode($request->email, $request->code);
+            if (!$validationResult['status']) {
                 return response()->json([
-                    'status' => true,
-                    'user' => $user,
-                    'token' => $token,
-                    'message' => 'Senha atualizada com sucesso!',
-                ], 200);
-            } catch (Exception $e) {
+                    'status' => false,
+                    'message' => $validationResult['message'],
+                ], 400);
+            }
 
-                // Salvar log
-                Log::warning('Senha não atualizada.', ['email' => $request->email, 'error' => $e->getMessage()]);
+            // Recuperar os dados do usuário
+            $user = User::where('email', $request->email)->first();
+
+            // Verificar se o usuário existe no banco de dados
+            if (!$user) {
+                Log::notice('Usuário não encontrado.', ['email' => $request->email]);
 
                 return response()->json([
                     'status' => false,
-                    'message' => 'Senha não atualizada!',
+                    'message' => 'Usuário não encontrado!',
                 ], 400);
-
             }
 
+            // Atualizar a senha do usuário (Laravel aplicará o bcrypt automaticamente)
+            $user->password = $request->password;
+            $updateStatus = $user->save();
+
+            // Verificar se a senha foi atualizada
+            if (!$updateStatus) {
+                Log::error('Falha ao atualizar a senha no banco de dados.', ['email' => $request->email]);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Falha ao atualizar a senha!',
+                ], 500);
+            }
+
+            // Gerar o token de autenticação
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Verificar e remover tokens de redefinição de senha
+            DB::table('password_reset_tokens')
+                ->where('email', $request->email)
+                ->delete();
+
+            // Salvar log de sucesso
+            Log::info('Senha atualizada com sucesso.', ['email' => $request->email]);
+
+            return response()->json([
+                'status' => true,
+                'user' => $user,
+                'token' => $token,
+                'message' => 'Senha atualizada com sucesso!',
+            ], 200);
+
+        } catch (Exception $e) {
+            Log::warning('Erro ao atualizar a senha.', ['email' => $request->email, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao atualizar a senha!',
+            ], 400);
         }
     }
+
 
 }

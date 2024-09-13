@@ -1,6 +1,6 @@
 Prezado(a) {{$user->name}}
 
-Para recuperar a sua senha do app xxx, use o código de verificação abaixo:
+Para recuperar a sua senha do app S2Mangás, use o código de verificação abaixo:
 
 {{ $code }}
 
@@ -8,4 +8,4 @@ Por questões de segurança esse código é válido somente até as {{ $formatte
 
 Atenciosamente,
 
-Celke
+Suporte S2Mangás
