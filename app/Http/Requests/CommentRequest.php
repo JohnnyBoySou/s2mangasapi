@@ -17,7 +17,7 @@ class CommentRequest extends FormRequest
         $rules = [
             'manga_id' => 'required|uuid',
             'message' => 'required|string|max:200',
-            'parent_id' => 'nullable|uuid|exists:comments,id',
+            'parent_id' => 'nullable|integer|exists:comments,id', 
         ];
 
         // Verificar se estamos atualizando um comentário
@@ -26,5 +26,15 @@ class CommentRequest extends FormRequest
         }
 
         return $rules;
+    }
+    public function messages(): array
+    {
+        return [
+            'manga_id.required' => 'O Id do mangá é obrigatório',
+            'message.required' => 'O Comentário é obrigatório',
+            'message.max' => 'O Comentário deve ter no máximo 200 caracteres',
+            'parent_id.exists' => 'O comentário pai não foi encontrado.',
+            ''=> '',
+        ];
     }
 }

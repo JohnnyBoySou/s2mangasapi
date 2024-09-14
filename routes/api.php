@@ -22,7 +22,7 @@ Route::get('/comments/{mangaId}', [CommentController::class, 'index']);
 
 // Rotas restritas
 Route::middleware('auth:sanctum')->group(function () {
-
+  Route::post('/comments/{id}/like', [CommentController::class, 'like']);
   Route::post('/comments', [CommentController::class, 'store']);
   Route::put('/comments/{id}', [CommentController::class, 'update']);
   Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
