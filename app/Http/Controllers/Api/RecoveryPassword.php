@@ -42,7 +42,7 @@ class RecoveryPassword extends Controller
                 $userPasswordResets->delete();
             }
 
-            $code = mt_rand(100000, 999999);
+            $code = mt_rand(1000, 9999);
             $token = Hash::make($code);
 
             $userNewPasswordResets = DB::table('password_reset_tokens')->insert([
