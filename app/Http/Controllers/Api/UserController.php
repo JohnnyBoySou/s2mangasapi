@@ -32,7 +32,6 @@ class UserController extends Controller
                 'capa' => $request->capa,
                 'bio' => $request->bio,
                 'languages' => json_encode($request->languages),
-                'collections' => json_encode($request->collections), // Converte o array em JSON
                 'genres' => json_encode($request->genres), // Converte o array em JSON
             ]);
 
@@ -75,7 +74,7 @@ class UserController extends Controller
 
     public function update(UserRequest $request): JsonResponse
     {
-        $user = Auth::user(); 
+        $user = Auth::user();
         DB::beginTransaction();
 
         try {

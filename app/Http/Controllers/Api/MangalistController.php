@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 use App\Http\Requests\MangalistRequest;
-use App\Models\Collection;
 use App\Http\Controllers\Controller;
 use App\Models\Mangalist;
 use Illuminate\Http\JsonResponse;

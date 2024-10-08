@@ -9,7 +9,6 @@ class Collection extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'id',
         'name',
         'mangas_id',
         'status',
