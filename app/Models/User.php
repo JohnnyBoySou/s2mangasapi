@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -44,19 +44,40 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
+        'password',
         'remember_token',
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast to native types.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'languages' => 'array',  // Se languages for um JSON, você pode fazer o casting para array
+        'genres' => 'array',     // Faz o mesmo para genres, caso seja JSON
+    ];
+
+    /**
+     * Usuários que o usuário está seguindo.
+     */
+    public function following(): BelongsToMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id');
     }
+
+    /**
+     * Usuários que estão seguindo o usuário.
+     */
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id');
+    }
+
+    public function isFollowing($userId)
+    {
+        return $this->following()->where('following_id', $userId)->exists();
+    }
+
 }

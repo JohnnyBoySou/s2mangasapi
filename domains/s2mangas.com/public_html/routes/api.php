@@ -88,13 +88,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::post('/reviews', [ReviewController::class, 'store']);
   Route::get('/reviews/{id}', [ReviewController::class, 'show']);
-  Route::put('/reviews/{id}', [ReviewController::class, 'edit']);
+  Route::put('/reviews/{id}', [ReviewController::class, 'update']);
   Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
   Route::post('/reviews/{id}/feedback', [ReviewController::class, 'markHelpful']);
 
 
   Route::get('/manga/reviews/statistics/{mangaId}', [ReviewController::class, 'statistics']);
-  Route::get('/manga/reviews/{mangaId}', [ReviewController::class, 'single']);
+  Route::get('/manga/{mangaId}/reviews', [ReviewController::class, 'single']);
 
   Route::get('/user/reviews', [ReviewController::class, 'userReviews']);
 

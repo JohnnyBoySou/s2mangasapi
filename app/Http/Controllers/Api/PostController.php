@@ -117,6 +117,27 @@ class PostController extends Controller
 
         return response()->json($posts);
     }
+    public function feed()
+    {
+        $userId = Auth::id(); // Obtém o ID do usuário autenticado
+
+        // Obtém os IDs dos usuários que o usuário autenticado está seguindo
+        $followingIds = Auth::user()->following()->pluck('following_id');
+
+        // Consulta os posts dos usuários seguidos, mais recentes
+        $posts = Post::with(['user:id,name,avatar']) // Carrega apenas user_id, name, avatar
+            ->whereIn('user_id', $followingIds) // Filtra apenas posts dos usuários que o usuário autenticado segue
+            ->orderBy('created_at', 'desc') // Ordena pelos mais recentes
+            ->paginate(10); // Retorna 10 posts por página
+
+        // Adiciona um campo 'liked' para verificar se o usuário curtiu cada post
+        $posts->getCollection()->transform(function ($post) use ($userId) {
+            $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
+            return $post;
+        });
+
+        return response()->json($posts);
+    }
 
 
     public function update(Request $request, $postId)
@@ -143,4 +164,42 @@ class PostController extends Controller
 
         return response()->json(['message' => 'Post excluído com sucesso']);
     }
+
+    public function userSinglePosts($id)
+    {
+        // Obtém os posts do usuário pelo ID fornecido
+        $posts = Post::where('user_id', $id)
+            ->withCount('likes') // Adiciona a contagem de likes
+            ->orderBy('created_at', 'desc') // Ordena pelos posts mais recentes
+            ->paginate(10);
+
+        // Verifica se o usuário tem posts
+        if ($posts->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Nenhum post encontrado para este usuário.',
+            ], 404);
+        }
+
+        // Retorna os posts do usuário
+        return response()->json([
+            'status' => true,
+            'posts' => $posts->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'image' => $post->image,
+                    'description' => $post->description,
+                    'color' => $post->color,
+                    'likes_count' => $post->likes_count,
+                    'created_at' => $post->created_at,
+                    'user' => [
+                        'id' => $post->user->id,
+                        'name' => $post->user->name,
+                        'avatar' => $post->user->avatar,
+                    ],
+                ];
+            }),
+        ], 200);
+    }
+
 }

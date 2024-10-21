@@ -55,17 +55,17 @@ class LibraryController extends Controller
             $limit = request()->input('limit', 10); // Limite por página, padrão é 10
             $offset = ($page - 1) * $limit; // Cálculo para o offset
 
-            if ($user->follows) {
+            if ($user) {
                 $progress = json_decode($user->progress, true);
                 $follows = json_decode($user->follows, true);
-                $likes = json_decode($user->likes, true);
+                $likes = json_decode($user->likes, associative: true);
                 $completes = json_decode($user->completes, true);
 
                 // Escolhe o conjunto de dados baseado no $id
                 $data = $id === 'follows' ? $follows : ($id === 'likes' ? $likes : ($id === 'completes' ? $completes : ($id === 'progress' ? $progress : [])));
 
-                // Total de itens no dataset
-                $total = count($data);
+                //$totalArray = json_decode($data, true); 
+                $total = is_array($data) ? count($data) : 0;
 
                 // Aplica a paginação no array
                 $paginatedData = array_slice($data, $offset, $limit);
@@ -82,8 +82,9 @@ class LibraryController extends Controller
             } else {
                 return response()->json([
                     'status' => true,
-                    'follows' => [],
-                    'message' => 'Nenhum mangá seguido encontrado',
+                    'data' => [],
+                    'message' => 'Nenhum mangá encontrado',
+                    'id' => $id
                 ], 200);
             }
         } catch (Exception $e) {

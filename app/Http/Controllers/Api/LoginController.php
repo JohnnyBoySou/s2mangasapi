@@ -27,11 +27,12 @@ class LoginController extends Controller
             $user = Auth::user();
 
             $token = $request->user()->createToken('auth_token')->plainTextToken;
-
+            $userData = $user->only(['id', 'name', 'email', 'avatar', 'capa', 'bio', 'coins', 'languages']);
+              
             return response()->json([
                 'status' => true,
                 'message' => 'Login realizado com sucesso',
-                'user' => $user,
+                'user' => $userData,
                 'token' => $token
             ], 200);
         } else {

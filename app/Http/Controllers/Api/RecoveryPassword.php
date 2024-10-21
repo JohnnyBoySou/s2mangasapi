@@ -30,7 +30,8 @@ class RecoveryPassword extends Controller
             );
             return response()->json([
                 'status' => false,
-                'message' => 'Email inexistente'
+                'message' => 'Email inexistente',
+                'email' => $request->email
             ], 400);
         }
         try {
