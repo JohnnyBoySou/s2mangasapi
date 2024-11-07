@@ -14,27 +14,20 @@ class PostController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'image' => 'required|string',
+            'image' => 'required|string', // URL ou caminho da imagem
             'description' => 'nullable|string',
             'color' => 'nullable|string',
-            'manga_id' => 'nullable|integer',
-            'manga_name' => 'nullable|string',
-            'manga_capa' => 'nullable|string'
         ]);
-    
+
         $post = Post::create([
             'user_id' => Auth::id(),
             'image' => $validatedData['image'],
             'description' => $validatedData['description'] ?? null,
             'color' => $validatedData['color'] ?? null,
-            'manga_id' => $validatedData['manga_id'] ?? null,
-            'manga_name' => $validatedData['manga_name'] ?? null,
-            'manga_capa' => $validatedData['manga_capa'] ?? null,
         ]);
-    
+
         return response()->json($post, 201);
     }
-    
 
     // Adicionar ou remover um like em um post
     public function like($postId)
@@ -115,10 +108,11 @@ class PostController extends Controller
             ->withCount('likes') // Adiciona a contagem de likes
             ->orderBy('likes_count', 'desc') // Ordena pelos que têm mais likes
             ->orderBy('created_at', 'desc') // Em caso de empate, ordena por data
-            ->paginate(10); // Retorna 10 posts por página
+            ->paginate(20); // Retorna 20 posts por página
 
         $posts->getCollection()->transform(function ($post) use ($userId) {
             $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
+            $post->date = \Carbon\Carbon::parse($post->created_at)->diffForHumans(); 
             return $post;
         });
 
@@ -140,6 +134,7 @@ class PostController extends Controller
         // Adiciona um campo 'liked' para verificar se o usuário curtiu cada post
         $posts->getCollection()->transform(function ($post) use ($userId) {
             $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
+            $post->date = \Carbon\Carbon::parse($post->created_at)->diffForHumans(); 
             return $post;
         });
 
@@ -150,21 +145,17 @@ class PostController extends Controller
     public function update(Request $request, $postId)
     {
         $post = Post::where('id', $postId)->where('user_id', Auth::id())->firstOrFail();
-    
+
         $validatedData = $request->validate([
             'image' => 'sometimes|required|string',
             'description' => 'nullable|string',
             'color' => 'nullable|string',
-            'manga_id' => 'nullable|integer',
-            'manga_name' => 'nullable|string',
-            'manga_capa' => 'nullable|string'
         ]);
-    
+
         $post->update($validatedData);
-    
+
         return response()->json(['message' => 'Post atualizado com sucesso', 'post' => $post]);
     }
-    
 
     // Excluir um post
     public function destroy($postId)

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CollectionController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\CommentPostController;
 use App\Http\Controllers\Api\CompletesController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LibraryController;
@@ -33,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/posts/most-liked', [PostController::class, 'mostLikedPosts']);
   Route::get('/posts/feed', action: [PostController::class, 'feed']);
 
-
+  Route::resource('/posts/{id}/comments', controller: CommentPostController::class);
 
   Route::get('/profile/{id}/collections', [CollectionController::class, 'userSingleCollections']);
   Route::get('/profile/{id}/posts', [PostController::class, 'userSinglePosts']);
@@ -88,13 +89,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::post('/reviews', [ReviewController::class, 'store']);
   Route::get('/reviews/{id}', [ReviewController::class, 'show']);
-  Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+  Route::put('/reviews/{id}', [ReviewController::class, 'edit']);
   Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
   Route::post('/reviews/{id}/feedback', [ReviewController::class, 'markHelpful']);
+  Route::get('/reviews/user/{id}', [ReviewController::class, 'userReviewsById']);
 
 
   Route::get('/manga/reviews/statistics/{mangaId}', [ReviewController::class, 'statistics']);
-  Route::get('/manga/{mangaId}/reviews', [ReviewController::class, 'single']);
+  Route::get('/manga/reviews/{mangaId}', [ReviewController::class, 'single']);
 
   Route::get('/user/reviews', [ReviewController::class, 'userReviews']);
 

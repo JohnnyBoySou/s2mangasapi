@@ -7,7 +7,9 @@ use App\Http\Requests\CommentEditRequest;
 use App\Http\Requests\CommentRequest;
 use App\Models\Comment;
 use App\Models\CommentLike;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
@@ -106,16 +108,17 @@ class CommentController extends Controller
                 'parent_id' => $comment->parent_id,
                 'created_at' => Carbon::parse($comment->created_at)->diffForHumans(),
                 'likes' => $comment->likes, // Inclua o número de likes, se necessário
-                'user' => [
+                'user' => $comment->user ? [
                     'id' => $comment->user->id,
                     'name' => $comment->user->name,
                     'avatar' => $comment->user->avatar,
-                ],
+                ] : null,
             ];
         });
 
         return response()->json($comments, 200);
     }
+
     public function update(CommentEditRequest $request,$id )
     {
         // Obter o usuário autenticado
@@ -142,6 +145,8 @@ class CommentController extends Controller
             'comment' => $comment,
         ], 200);
     }
+    
+
 
     public function destroy($id)
     {

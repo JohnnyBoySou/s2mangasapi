@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CollectionController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\CommentPostController;
 use App\Http\Controllers\Api\CompletesController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LibraryController;
@@ -33,7 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/posts/most-liked', [PostController::class, 'mostLikedPosts']);
   Route::get('/posts/feed', action: [PostController::class, 'feed']);
 
-
+  Route::post('/posts/{postId}/comments', [CommentPostController::class, 'store']);
+  Route::get('/posts/{postId}/comments', [CommentPostController::class, 'index']);
+  Route::put('/posts/comments/{commentId}', [CommentPostController::class, 'update']);
+  Route::delete('/posts/comments/{commentId}', [CommentPostController::class, 'destroy']);
 
   Route::get('/profile/{id}/collections', [CollectionController::class, 'userSingleCollections']);
   Route::get('/profile/{id}/posts', [PostController::class, 'userSinglePosts']);
