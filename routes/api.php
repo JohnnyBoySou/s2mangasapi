@@ -33,7 +33,6 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::post('/posts/{post}/like', action: [PostController::class, 'like']);  // Dar ou remover like
   Route::get('/posts/most-liked', [PostController::class, 'mostLikedPosts']);
   Route::get('/posts/feed', action: [PostController::class, 'feed']);
-
   Route::post('/posts/{postId}/comments', [CommentPostController::class, 'store']);
   Route::get('/posts/{postId}/comments', [CommentPostController::class, 'index']);
   Route::put('/posts/comments/{commentId}', [CommentPostController::class, 'update']);
@@ -41,37 +40,32 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::get('/profile/{id}/collections', [CollectionController::class, 'userSingleCollections']);
   Route::get('/profile/{id}/posts', [PostController::class, 'userSinglePosts']);
+  Route::get('/profile/{id}/reviews', [ReviewController::class, 'userReviewsById']);
   Route::get('/profile/{id}', [UserController::class, 'userProfile']);
 
 
   Route::get('/user/posts', [PostController::class, 'userPosts']);
+  Route::get('/user/reviews', [ReviewController::class, 'userReviews']);
   Route::get('/user/genres', [UserController::class, 'genres']);
-
-  Route::get('/posts', [PostController::class, 'allPosts']);
-  Route::put('/posts/{post}', [PostController::class, 'update']);
-  Route::delete('/posts/{post}', [PostController::class, 'destroy']);
-
   Route::post('/users/logout', [LoginController::class, 'logout']);
   Route::put('/users/edit', [UserController::class, 'update']);
   Route::delete('/users/exclude', [UserController::class, 'destroy']);
+
   Route::get('/status/{id}', [StatusController::class, 'getStatus']);
 
   // Rotas de recursos
-  Route::resource('/users', UserController::class);
-  Route::resource('/comments', CommentController::class);
-  Route::resource('/collections', CollectionController::class);
-  Route::resource('/mangalist', MangalistController::class);
-
+ 
+  Route::post('/comments/{id}/like', [CommentController::class, 'like']);
 
   Route::post('/collections/includes', [CollectionController::class, 'includes']);
+  Route::put('/collections/toggle/{collection}', [CollectionController::class, 'toggle']);
   Route::get('/collections/search/{search}', [CollectionController::class, 'search']);
-  // Rotas adicionais
+  Route::post('/collections/{id}/like', [CollectionController::class, 'toggleLike']);
+  Route::get('/collections/most-liked', action: [CollectionController::class, 'mostLikedCollections']);
+  Route::post('/collection/fixed/{collection}', [CollectionController::class, 'toggleFixed']);
+
   Route::get('/library', [LibraryController::class, 'index']);
   Route::get('/library/{id}', [LibraryController::class, 'single']);
-
-  Route::post('/comments/{id}/like', [CommentController::class, 'like']);
-  Route::put('/collections/toggle/{collection}', [CollectionController::class, 'toggle']);
-  Route::post('/collection/fixed/{collection}', [CollectionController::class, 'toggleFixed']);
   Route::get('/follow', [FollowController::class, 'index']);
   Route::put('/follow', [FollowController::class, 'update']);
   Route::get('/completes', [CompletesController::class, 'index']);
@@ -100,6 +94,13 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/manga/reviews/statistics/{mangaId}', [ReviewController::class, 'statistics']);
   Route::get('/manga/reviews/{mangaId}', [ReviewController::class, 'single']);
 
-  Route::get('/user/reviews', [ReviewController::class, 'userReviews']);
+  Route::get('/posts', [PostController::class, 'allPosts']);
+  Route::put('/posts/{post}', [PostController::class, 'update']);
+  Route::delete('/posts/{post}', [PostController::class, 'destroy']);
 
+
+  Route::resource('/users', UserController::class);
+  Route::resource('/collections', CollectionController::class);
+  Route::resource('/mangalist', MangalistController::class);
+  Route::resource('/comments', CommentController::class);
 });

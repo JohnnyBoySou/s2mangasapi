@@ -18,23 +18,28 @@ class CollectionController extends Controller
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        $collections = Collection::where('user_id', $user->id)->paginate(10);
-
+        
+        // Use o withCount para contar os likes de cada coleção
+        $collections = Collection::where('user_id', $user->id)
+            ->withCount('likes') // Contando os likes
+            ->paginate(10);
+    
         $collections->each(function ($collection) {
             $collection->makeHidden(['mangas_id', 'genres', 'user_id']);
-
+    
             // Fazer o parse da string mangas_id em um array de objetos
             $mangasArray = json_decode($collection->mangas_id, true); // Passando true para obter um array associativo
-
+    
             // Calcular o total de mangas
             $collection->total_mangas = is_array($mangasArray) ? count($mangasArray) : 0; // Verifica se é um array antes de contar
         });
-
+    
         return response()->json([
             'status' => true,
             'collections' => $collections,
         ], 200);
     }
+    
 
 
 
@@ -354,6 +359,87 @@ class CollectionController extends Controller
             'collections' => $collections,
         ], 200);
     }
+
+    public function toggleLike($id): JsonResponse
+    {
+        $user = Auth::user(); // Obtém o usuário autenticado
+
+        DB::beginTransaction();
+
+        try {
+            // Verifica se a coleção existe
+            $collection = Collection::find($id);
+
+            if (!$collection) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Coleção não encontrada.',
+                ], 404);
+            }
+
+            // Procura se já existe um like do usuário para essa coleção
+            $existingLike = DB::table('collections_likes')
+                ->where('collection_id', $id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($existingLike) {
+                // Remover o like existente
+                DB::table('collections_likes')
+                    ->where('id', $existingLike->id)
+                    ->delete();
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => true,
+                    'liked' => false,
+                    'message' => 'Curtida removida.',
+                ], 200);
+            } else {
+                // Adicionar uma nova curtida
+                DB::table('collections_likes')->insert([
+                    'collection_id' => $id,
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => true,
+                    'liked' => true,
+                    'message' => 'Curtida adicionada.',
+                ], 200);
+            }
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao alternar curtida.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function mostLikedCollections(): JsonResponse
+{
+    // Obtém as coleções públicas e conta as curtidas
+    $collections = Collection::where('status', 'public')
+        ->withCount('likes')  // Conta as curtidas associadas à coleção
+        ->orderByDesc('likes_count')  // Ordena pelas coleções mais curtidas (likes_count)
+        ->paginate(10); // Paginação para limitar o número de coleções
+
+    $collections->makeHidden(['mangas_id', 'genres']);
+    
+    // Retorna a resposta com as coleções e o likes_count
+    return response()->json([
+        'status' => true,
+        'collections' => $collections,
+    ], 200);
+}
 
 
 }

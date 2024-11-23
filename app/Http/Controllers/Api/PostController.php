@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Post;
 use App\Models\Like;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 
@@ -17,7 +18,7 @@ class PostController extends Controller
             'image' => 'required|string',
             'description' => 'nullable|string',
             'color' => 'nullable|string',
-            'manga_id' => 'nullable|integer',
+            'manga_id' => 'required|uuid',
             'manga_name' => 'nullable|string',
             'manga_capa' => 'nullable|string'
         ]);
@@ -107,44 +108,53 @@ class PostController extends Controller
 
         return response()->json($posts);
     }
-    public function mostLikedPosts()
-    {
-        $userId = Auth::id(); // Obtém o ID do usuário autenticado
 
-        $posts = Post::with(['user:id,name,avatar']) // Carrega apenas user_id, name, avatar
-            ->withCount('likes') // Adiciona a contagem de likes
-            ->orderBy('likes_count', 'desc') // Ordena pelos que têm mais likes
-            ->orderBy('created_at', 'desc') // Em caso de empate, ordena por data
-            ->paginate(10); // Retorna 10 posts por página
+   
+public function mostLikedPosts()
+{
+    $userId = Auth::id(); // Obtém o ID do usuário autenticado
 
-        $posts->getCollection()->transform(function ($post) use ($userId) {
-            $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
-            return $post;
-        });
+    $posts = Post::with(['user:id,name,avatar']) // Carrega apenas user_id, name, avatar
+        ->withCount('likes') // Adiciona a contagem de likes
+        ->orderBy('likes_count', 'desc') // Ordena pelos que têm mais likes
+        ->orderBy('created_at', 'desc') // Em caso de empate, ordena por data
+        ->paginate(10); // Retorna 10 posts por página
 
-        return response()->json($posts);
-    }
-    public function feed()
-    {
-        $userId = Auth::id(); // Obtém o ID do usuário autenticado
+    $posts->getCollection()->transform(function ($post) use ($userId) {
+        $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
+        $post->date = Carbon::parse($post->created_at)->diffForHumans(); // Adiciona a data formatada
+        $post->likes_count = $post->likes_count; // Garante que 'likes_count' seja incluído na resposta
+        return $post;
+    });
 
-        // Obtém os IDs dos usuários que o usuário autenticado está seguindo
-        $followingIds = Auth::user()->following()->pluck('following_id');
+    return response()->json($posts);
+}
 
-        // Consulta os posts dos usuários seguidos, mais recentes
-        $posts = Post::with(['user:id,name,avatar']) // Carrega apenas user_id, name, avatar
-            ->whereIn('user_id', $followingIds) // Filtra apenas posts dos usuários que o usuário autenticado segue
-            ->orderBy('created_at', 'desc') // Ordena pelos mais recentes
-            ->paginate(10); // Retorna 10 posts por página
+public function feed()
+{
+    $userId = Auth::id(); // Obtém o ID do usuário autenticado
 
-        // Adiciona um campo 'liked' para verificar se o usuário curtiu cada post
-        $posts->getCollection()->transform(function ($post) use ($userId) {
-            $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
-            return $post;
-        });
+    // Obtém os IDs dos usuários que o usuário autenticado está seguindo
+    $followingIds = Auth::user()->following()->pluck('following_id');
 
-        return response()->json($posts);
-    }
+    // Consulta os posts dos usuários seguidos, mais recentes
+    $posts = Post::with(['user:id,name,avatar']) // Carrega apenas user_id, name, avatar
+        ->whereIn('user_id', $followingIds) // Filtra apenas posts dos usuários que o usuário autenticado segue
+        ->withCount('likes') // Adiciona a contagem de likes
+        ->orderBy('created_at', 'desc') // Ordena pelos mais recentes
+        ->paginate(10); // Retorna 10 posts por página
+
+    // Adiciona um campo 'liked' para verificar se o usuário curtiu cada post
+    $posts->getCollection()->transform(function ($post) use ($userId) {
+        $post->liked = $post->likes()->where('user_id', $userId)->exists(); // Verifica se o usuário curtiu o post
+        $post->date = Carbon::parse($post->created_at)->diffForHumans(); // Adiciona a data formatada
+        $post->likes_count = $post->likes_count; // Garante que 'likes_count' seja incluído na resposta
+        return $post;
+    });
+
+    return response()->json($posts);
+}
+    
 
 
     public function update(Request $request, $postId)
@@ -155,7 +165,7 @@ class PostController extends Controller
             'image' => 'sometimes|required|string',
             'description' => 'nullable|string',
             'color' => 'nullable|string',
-            'manga_id' => 'nullable|integer',
+            'manga_id' => 'required|uuid',
             'manga_name' => 'nullable|string',
             'manga_capa' => 'nullable|string'
         ]);
