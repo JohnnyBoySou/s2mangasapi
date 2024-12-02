@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Collection extends Model
 {
     use HasFactory;
-
     protected $fillable = [
+        'id',
         'name',
         'mangas_id',
         'status',
@@ -20,11 +20,10 @@ class Collection extends Model
     ];
 
     public function likes()
-{
-    return $this->hasMany(CollectionLike::class, 'collection_id');
-}   
+    {
+        return $this->hasMany(CollectionLike::class, 'collection_id');
+    }
 
-   
     public function isLikedBy($userId)
     {
         return $this->likes()->where('user_id', $userId)->exists();

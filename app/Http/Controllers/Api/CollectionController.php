@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\CollectionRequest;
 use App\Http\Requests\MangaRequest;
 use App\Models\Collection;
-use App\Models\Manga;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,34 +11,35 @@ use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 class CollectionController extends Controller
 {
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Use o withCount para contar os likes de cada coleção
         $collections = Collection::where('user_id', $user->id)
             ->withCount('likes') // Contando os likes
             ->paginate(10);
-    
+
         $collections->each(function ($collection) {
             $collection->makeHidden(['mangas_id', 'genres', 'user_id']);
-    
+
             // Fazer o parse da string mangas_id em um array de objetos
             $mangasArray = json_decode($collection->mangas_id, true); // Passando true para obter um array associativo
-    
+
             // Calcular o total de mangas
             $collection->total_mangas = is_array($mangasArray) ? count($mangasArray) : 0; // Verifica se é um array antes de contar
         });
-    
+
         return response()->json([
             'status' => true,
             'collections' => $collections,
         ], 200);
     }
-    
+
 
 
 
@@ -425,21 +425,84 @@ class CollectionController extends Controller
     }
 
     public function mostLikedCollections(): JsonResponse
-{
-    // Obtém as coleções públicas e conta as curtidas
-    $collections = Collection::where('status', 'public')
-        ->withCount('likes')  // Conta as curtidas associadas à coleção
-        ->orderByDesc('likes_count')  // Ordena pelas coleções mais curtidas (likes_count)
-        ->paginate(10); // Paginação para limitar o número de coleções
+    {
+        // Obtém as coleções públicas e conta as curtidas
+        $collections = Collection::where('status', 'public')
+            ->withCount('likes')  // Conta as curtidas associadas à coleção
+            ->orderByDesc('likes_count')  // Ordena pelas coleções mais curtidas (likes_count)
+            ->paginate(10); // Paginação para limitar o número de coleções
 
-    $collections->makeHidden(['mangas_id', 'genres']);
-    
-    // Retorna a resposta com as coleções e o likes_count
-    return response()->json([
-        'status' => true,
-        'collections' => $collections,
-    ], 200);
-}
+        $collections->makeHidden(['mangas_id', 'genres']);
+
+        // Retorna a resposta com as coleções e o likes_count
+        return response()->json([
+            'status' => true,
+            'collections' => $collections,
+        ], 200);
+    }
+
+
+    public function uploadCover(Request $request, $collectionId)
+    {
+        // Validar se a imagem foi enviada
+        $request->validate([
+            'image' => 'required|string', // Certifique-se de que a imagem é uma string
+        ]);
+
+        // Extrair a string base64
+        $imageData = $request->input('image');
+
+        // Remover o prefixo "data:image/jpeg;base64," (ou o prefixo de qualquer outro tipo)
+        $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $imageData);
+
+        // Decodificar a base64 para binário
+        $imageData = base64_decode($imageData);
+
+        // Gerar um nome único para a imagem
+        $fileName = uniqid() . '.jpg';
+
+        // Salvar a imagem na pasta 'public/assets'
+        $path = 'assets/' . $fileName;
+
+        Storage::disk('public')->put($path, $imageData);
+
+        // Obter o link completo da imagem, usando o link simbólico
+        $imageUrl = Storage::url($path);  // Gera a URL pública da imagem
+
+        // Concatenar a URL do domínio com o caminho da imagem
+        $imageUrl = 'https://s2mangas.com' . $imageUrl;  // Use o caminho correto para o domínio
+
+        // Atualizar a coleção com o novo caminho da capa
+        $collection = Collection::findOrFail($collectionId);
+        $collection->capa = $imageUrl;  // Atualiza com o link completo da imagem
+        $collection->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Capa da coleção atualizada com sucesso!',
+            'capa' => $imageUrl,  // Retorna a URL completa da imagem
+        ]);
+    }
+
+
+    public function searchAll($search): JsonResponse
+    {
+        $collections = Collection::withCount('likes')
+            ->where('status', 'public') // Filtra por status "public"
+            ->where('name', 'like', '%' . $search . '%') // Pesquisa parcial no nome
+            ->paginate(10);
+
+        $response = $collections->isEmpty()
+            ? []
+            : $collections;
+
+
+        return response()->json([
+            'status' => true,
+            'collections' => $response,
+        ], 200);
+    }
+
 
 
 }

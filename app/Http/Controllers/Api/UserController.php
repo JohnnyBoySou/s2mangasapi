@@ -145,19 +145,17 @@ class UserController extends Controller
     }
 
 
-
     public function genres(): JsonResponse
     {
         $user = Auth::user();
         $userData = $user->only(['genres']);
+        $genres = is_string($userData['genres']) ? json_decode($userData['genres'], true) : $userData['genres'];
 
         return response()->json([
             'status' => true,
-            'genres' => json_decode($userData['genres'])
+            'genres' => $genres
         ], 200);
-
     }
-
     public function follow($id): JsonResponse
     {
         $user = Auth::user();

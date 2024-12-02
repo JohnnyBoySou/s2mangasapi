@@ -155,7 +155,7 @@ return response()->json(['message' => 'Review atualizada com sucesso!', 'status'
 
         // Verifica se existem reviews
         if ($reviews->isEmpty()) {
-            return response()->json(['message' => 'Nenhuma review encontrada para este mangá.', 'status' => false], 404);
+            return response()->json(['message' => 'Nenhuma review encontrada para este mangá.', 'status' => false], 200);
         }
 
         // Calcula a média de notas

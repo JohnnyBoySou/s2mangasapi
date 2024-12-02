@@ -14,8 +14,8 @@ class MangalistController extends Controller
 {
     public function index(): JsonResponse
     {
-        $user = Auth::user();
-        $mangalist = Mangalist::where('user_id', $user->id)->paginate(10);
+        $mangalist = Mangalist::withCount('likes')->orderByDesc('likes_count')->paginate(10); // Remove o filtro por usuário
+    
         return response()->json([
             'status' => true,
             'mangalist' => $mangalist,
@@ -51,7 +51,7 @@ class MangalistController extends Controller
                 'descricao' => $request->input('descricao'),
                 'mangas_id' => json_encode($request->input('mangas_id')),
                 'type' => $request->input('type'),
-                'user_id' => $user->id, 
+                'user_id' => $user->id,
             ]);
 
             $mangalist->save();
@@ -104,7 +104,7 @@ class MangalistController extends Controller
             $user = Auth::user();
             $mangalist = Mangalist::where('id', $id)
                 ->where('user_id', $user->id)
-                ->firstOrFail(); 
+                ->firstOrFail();
 
             $mangalist->delete();
 
@@ -125,5 +125,102 @@ class MangalistController extends Controller
             ], 400);
         }
     }
+
+    public function searchAll($search): JsonResponse
+    {
+        $mangalist = Mangalist::where('name', 'like', '%' . $search . '%')
+            ->paginate(10);
+
+        // Verifica se há resultados, se não, retorna um array vazio
+        $response = $mangalist->isEmpty()
+            ? []
+            : $mangalist;
+
+        return response()->json([
+            'status' => true,
+            'mangalists' => $response,
+        ], 200);
+    }
+
+    public function toggleLike($id): JsonResponse
+    {
+        $user = Auth::user(); // Obtém o usuário autenticado
+
+        DB::beginTransaction();
+
+        try {
+            // Verifica se a coleção existe
+            $mangalist = Mangalist::find($id);
+
+            if (!$mangalist) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Coleção não encontrada.',
+                ], 404);
+            }
+
+            // Procura se já existe um like do usuário para essa coleção
+            $existingLike = DB::table('mangalists_likes')
+                ->where('mangalist_id', $id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($existingLike) {
+                // Remover o like existente
+                DB::table('mangalists_likes')
+                    ->where('id', $existingLike->id)
+                    ->delete();
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => true,
+                    'liked' => false,
+                    'message' => 'Curtida removida.',
+                ], 200);
+            } else {
+                // Adicionar uma nova curtida
+                DB::table('mangalists_likes')->insert([
+                    'mangalist_id' => $id,
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => true,
+                    'liked' => true,
+                    'message' => 'Curtida adicionada.',
+                ], 200);
+            }
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Erro ao alternar curtida.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function userMangalist(): JsonResponse
+    {
+        $user = Auth::user();
+    
+        $mangalist = Mangalist::withCount('likes') // Inclui a contagem de curtidas
+            ->whereHas('likes', function ($query) use ($user) {
+                $query->where('user_id', $user->id); // Filtra pelos likes do usuário atual
+            })
+            ->orderByDesc('likes_count') // Ordena pela quantidade de curtidas
+            ->paginate(10);
+    
+        return response()->json([
+            'status' => true,
+            'mangalist' => $mangalist,
+        ], 200);
+    }
+    
 
 }

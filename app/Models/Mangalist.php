@@ -19,8 +19,14 @@ class Mangalist extends Model
         'user_id',
     ];
 
-    protected $hidden = [
-        //'user_id',
-    ];
 
+    public function likes()
+    {
+        return $this->hasMany(MangalistLike::class, 'mangalist_id');
+    }
+
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
 }
