@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserRequest;
+use Illuminate\Http\Request;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+
 
 class UserController extends Controller
 {
@@ -277,6 +279,39 @@ class UserController extends Controller
             $authUser->following()->attach($userToFollow->id);
             return response()->json(['status' => true, 'message' => 'Começou a seguir.'], 200);
         }
+    }
+
+
+    public function search(Request $request): JsonResponse
+    {
+        // Valida o parâmetro "name"
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        // Recupera o nome da requisição
+        $name = $request->input('name');
+
+        // Busca usuários cujo nome contenha o texto informado
+        $users = User::where('name', 'LIKE', '%' . $name . '%')
+            ->select(['id', 'name', 'avatar', 'bio'])
+            ->paginate(10);
+
+
+        // Verifica se encontrou algum usuário
+        if ($users->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'users' => [],
+                'message' => 'Nenhum usuário encontrado com esse nome.',
+            ], 200);
+        }
+
+        // Retorna os resultados
+        return response()->json([
+            'status' => true,
+            'users' => $users,
+        ], 200);
     }
 
 

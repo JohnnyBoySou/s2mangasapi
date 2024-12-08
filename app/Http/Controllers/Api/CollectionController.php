@@ -502,7 +502,33 @@ class CollectionController extends Controller
             'collections' => $response,
         ], 200);
     }
-
-
+    public function userCollections(): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Obtém as coleções do usuário pelo ID fornecido e com status 'public'
+        $collections = Collection::where('user_id', $user->id) // Corrigido para o uso correto do 'where'
+            ->paginate(20);
+    
+        // Remove campos indesejados de cada coleção
+        $collections->each(function ($collection) {
+            $collection->makeHidden(['mangas_id', 'genres', 'user_id']); // Faz os campos invisíveis
+        });
+    
+        // Verifica se há coleções públicas para o usuário
+        if ($collections->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Nenhuma coleção pública encontrada para este usuário.',
+            ], 404);
+        }
+    
+        // Retorna as coleções públicas do usuário
+        return response()->json([
+            'status' => true,
+            'collections' => $collections,
+        ], 200);
+    }
+    
 
 }

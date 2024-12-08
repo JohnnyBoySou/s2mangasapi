@@ -144,18 +144,17 @@ class MangalistController extends Controller
 
     public function toggleLike($id): JsonResponse
     {
-        $user = Auth::user(); // Obtém o usuário autenticado
+        $user = Auth::user(); 
 
         DB::beginTransaction();
 
         try {
-            // Verifica se a coleção existe
             $mangalist = Mangalist::find($id);
 
             if (!$mangalist) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Coleção não encontrada.',
+                    'message' => 'Mangalist não encontrada.',
                 ], 404);
             }
 
@@ -221,6 +220,5 @@ class MangalistController extends Controller
             'mangalist' => $mangalist,
         ], 200);
     }
-    
 
 }

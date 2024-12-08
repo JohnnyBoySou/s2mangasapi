@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\WallpaperController;
 use Illuminate\Support\Facades\Route;
 
 // Rotas públicas
@@ -47,10 +48,12 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/user/posts', [PostController::class, 'userPosts']);
   Route::get('/user/reviews', [ReviewController::class, 'userReviews']);
   Route::get('/user/genres', [UserController::class, 'genres']);
-  Route::get('/user/mangalist', [MangalistController::class, 'userMangalist']);
+  Route::get('/user/mangalists', [MangalistController::class, 'userMangalist']);
+  Route::get('/user/collections', [CollectionController::class, 'userCollections']);
   Route::post('/users/logout', [LoginController::class, 'logout']);
   Route::put('/users/edit', [UserController::class, 'update']);
   Route::delete('/users/exclude', [UserController::class, 'destroy']);
+  Route::get('/users/search', [UserController::class, 'search']);
 
   Route::get('/status/{id}', [StatusController::class, 'getStatus']);
 
@@ -95,13 +98,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::get('/search/mangalist/{search}', [MangalistController::class, 'searchAll']);
   Route::get('/search/collection/{search}', [CollectionController::class, 'searchAll']);
+  Route::get('/search/user', [UserController::class, 'search']);
 
   Route::post('/mangalist/{id}/like', [MangalistController::class, 'toggleLike']);
+  Route::post('/wallpapers/create', [WallpaperController::class, 'store']);
 
 
   Route::resource('/reviews', ReviewController::class);
-  Route::resource('/users', UserController::class);
+  Route::resource('/users', controller: UserController::class);
   Route::resource('/collections', CollectionController::class);
-  Route::resource('/mangalist', MangalistController::class);
+  Route::resource('/mangalists', MangalistController::class);
   Route::resource('/comments', CommentController::class);
+  Route::resource('/wallpapers', WallpaperController::class);
 });
