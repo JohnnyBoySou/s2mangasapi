@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CommentPostController;
 use App\Http\Controllers\Api\CompletesController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LibraryController;
+use App\Http\Controllers\Api\MangaController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProgressController;
 use App\Http\Controllers\Api\LikesController;
@@ -57,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::get('/status/{id}', [StatusController::class, 'getStatus']);
 
- 
+
   Route::post('/comments/{id}/like', [CommentController::class, 'like']);
 
   Route::post('/collections/includes', [CollectionController::class, 'includes']);
@@ -110,4 +111,6 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::resource('/mangalists', MangalistController::class);
   Route::resource('/comments', CommentController::class);
   Route::resource('/wallpapers', WallpaperController::class);
+
+  Route::resource('/manga', MangaController::class);
 });
