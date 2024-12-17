@@ -8,20 +8,30 @@ class MangaItem extends Model
 {
     use HasFactory;
 
+    protected $table = 'mangas';  // A tabela 'mangas' será usada para o modelo MangaItem
     protected $fillable = [
-        'name',
-        'description',
-        'capa',
-        'categories',
-        'languages',
+        'uuid',  // Adicionando o campo uuid
+        'name', 
+        'description', 
+        'capa', 
         'release_date',
         'status',
         'type',
         'year',
+        'languages', 
+        'categories', 
+        'create_date',
+        'user_id',
     ];
 
-    protected $casts = [
-        'categories' => 'array',
-        'languages' => 'array',
-    ];
+    public function likes()
+    {
+        return $this->hasMany(MangaLike::class, 'manga_id');
+    }
+
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
+
 }

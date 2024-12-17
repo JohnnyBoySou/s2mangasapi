@@ -45,11 +45,12 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/profile/{id}/reviews', [ReviewController::class, 'userReviewsById']);
   Route::get('/profile/{id}', [UserController::class, 'userProfile']);
 
-
   Route::get('/user/posts', [PostController::class, 'userPosts']);
   Route::get('/user/reviews', [ReviewController::class, 'userReviews']);
   Route::get('/user/genres', [UserController::class, 'genres']);
-  Route::get('/user/mangalists', [MangalistController::class, 'userMangalist']);
+  Route::get('/user/mangalists', [MangalistController::class, 'user']);
+  Route::get('/user/manga', [MangaController::class, 'user']);
+
   Route::get('/user/collections', [CollectionController::class, 'userCollections']);
   Route::post('/users/logout', [LoginController::class, 'logout']);
   Route::put('/users/edit', [UserController::class, 'update']);
@@ -57,7 +58,6 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/users/search', [UserController::class, 'search']);
 
   Route::get('/status/{id}', [StatusController::class, 'getStatus']);
-
 
   Route::post('/comments/{id}/like', [CommentController::class, 'like']);
 
@@ -92,18 +92,25 @@ Route::middleware('auth:sanctum')->group(function () {
 
   Route::get('/manga/reviews/statistics/{mangaId}', [ReviewController::class, 'statistics']);
   Route::get('/manga/reviews/{mangaId}', [ReviewController::class, 'single']);
-
+  
   Route::get('/posts', [PostController::class, 'allPosts']);
   Route::put('/posts/{post}', [PostController::class, 'update']);
   Route::delete('/posts/{post}', [PostController::class, 'destroy']);
-
+  
   Route::get('/search/mangalist/{search}', [MangalistController::class, 'searchAll']);
   Route::get('/search/collection/{search}', [CollectionController::class, 'searchAll']);
   Route::get('/search/user', [UserController::class, 'search']);
-
-  Route::post('/mangalist/{id}/like', [MangalistController::class, 'toggleLike']);
-  Route::post('/wallpapers/create', [WallpaperController::class, 'store']);
-
+  Route::get('/search/manga', [MangaController::class, 'search']);
+  
+  Route::post('/mangalist/{id}/like', [MangalistController::class, 'like']);
+  
+  Route::post('/manga/{id}/like', [MangaController::class, 'like']);
+  Route::get('/manga/search', [MangaController::class, 'search']);
+  //DASHBOARD
+  Route::get('/dashboard/mangas', [MangaController::class, 'statistics']);
+  Route::get('/dashboard/mangalists', [MangalistController::class, 'statistics']);
+  
+  //Route::post('/wallpapers/create', [WallpaperController::class, 'store']);
 
   Route::resource('/reviews', ReviewController::class);
   Route::resource('/users', controller: UserController::class);
@@ -111,6 +118,5 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::resource('/mangalists', MangalistController::class);
   Route::resource('/comments', CommentController::class);
   Route::resource('/wallpapers', WallpaperController::class);
-
   Route::resource('/manga', MangaController::class);
 });

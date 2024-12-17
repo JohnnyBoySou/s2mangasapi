@@ -15,7 +15,7 @@ class MangalistController extends Controller
     public function index(): JsonResponse
     {
         $mangalist = Mangalist::withCount('likes')->orderByDesc('likes_count')->paginate(10); // Remove o filtro por usuário
-    
+
         return response()->json([
             'status' => true,
             'mangalist' => $mangalist,
@@ -24,19 +24,21 @@ class MangalistController extends Controller
 
     public function show($id): JsonResponse
     {
-        $user = Auth::user();
-        $mangalist = $user->mangalist()->find($id);
+        $mangalist = MangaList::find($id); // Busca o mangalist diretamente pelo ID
+
         if (!$mangalist) {
             return response()->json([
                 'status' => false,
                 'message' => 'Mangálist não encontrada',
             ], 404);
         }
+
         return response()->json([
             'status' => true,
             'mangalist' => $mangalist,
         ], 200);
     }
+
 
     public function store(MangalistRequest $request): JsonResponse
     {
@@ -125,7 +127,6 @@ class MangalistController extends Controller
             ], 400);
         }
     }
-
     public function searchAll($search): JsonResponse
     {
         $mangalist = Mangalist::where('name', 'like', '%' . $search . '%')
@@ -141,10 +142,9 @@ class MangalistController extends Controller
             'mangalists' => $response,
         ], 200);
     }
-
-    public function toggleLike($id): JsonResponse
+    public function like($id): JsonResponse
     {
-        $user = Auth::user(); 
+        $user = Auth::user();
 
         DB::beginTransaction();
 
@@ -204,21 +204,118 @@ class MangalistController extends Controller
             ], 500);
         }
     }
-    public function userMangalist(): JsonResponse
+    public function user(): JsonResponse
     {
         $user = Auth::user();
-    
-        $mangalist = Mangalist::withCount('likes') // Inclui a contagem de curtidas
-            ->whereHas('likes', function ($query) use ($user) {
-                $query->where('user_id', $user->id); // Filtra pelos likes do usuário atual
-            })
-            ->orderByDesc('likes_count') // Ordena pela quantidade de curtidas
-            ->paginate(10);
-    
+
+        $mangalist = Mangalist::where('user_id', $user->id)->paginate(10);
+
         return response()->json([
             'status' => true,
             'mangalist' => $mangalist,
         ], 200);
     }
+    public function statistics(): JsonResponse
+{
+    $currentWeekStart = now()->startOfWeek();
+    $currentWeekEnd = now()->endOfWeek();
+    $lastWeekStart = now()->subWeek()->startOfWeek();
+    $lastWeekEnd = now()->subWeek()->endOfWeek();
+    $currentMonthStart = now()->startOfMonth();
+    $currentMonthEnd = now()->endOfMonth();
+    $lastMonthStart = now()->subMonth()->startOfMonth();
+    $lastMonthEnd = now()->subMonth()->endOfMonth();
+    $currentYearStart = now()->startOfYear();
+    $currentYearEnd = now()->endOfYear();
+    $lastYearStart = now()->subYear()->startOfYear();
+    $lastYearEnd = now()->subYear()->endOfYear();
 
+    // Quantidade de Mangalists
+    $publishedLastWeek = Mangalist::whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])->count();
+    $publishedThisWeek = Mangalist::whereBetween('created_at', [$currentWeekStart, $currentWeekEnd])->count();
+    $publishedThisMonth = Mangalist::whereBetween('created_at', [$currentMonthStart, $currentMonthEnd])->count();
+    $publishedLastMonth = Mangalist::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+    $publishedThisYear = Mangalist::whereBetween('created_at', [$currentYearStart, $currentYearEnd])->count();
+    $publishedLastYear = Mangalist::whereBetween('created_at', [$lastYearStart, $lastYearEnd])->count();
+
+    // Porcentagem de aumento ou queda nos mangalists anuais
+    $yearComparison = $publishedLastYear > 0
+        ? round((($publishedThisYear - $publishedLastYear) / $publishedLastYear) * 100, 2)
+        : ($publishedThisYear > 0 ? 100 : 0);
+
+    // Porcentagem de aumento ou queda nos mangalists semanais
+    $weekComparison = $publishedLastWeek > 0
+        ? round((($publishedThisWeek - $publishedLastWeek) / $publishedLastWeek) * 100, 2)
+        : ($publishedThisWeek > 0 ? 100 : 0);
+
+    // Porcentagem de aumento ou queda nos mangalists mensais
+    $monthComparison = $publishedLastMonth > 0
+        ? round((($publishedThisMonth - $publishedLastMonth) / $publishedLastMonth) * 100, 2)
+        : ($publishedThisMonth > 0 ? 100 : 0);
+
+    // Quantidade de likes
+    $likesLastWeek = DB::table('mangalists_likes')
+        ->whereBetween('created_at', [$lastWeekStart, $lastWeekEnd])
+        ->count();
+    $likesThisWeek = DB::table('mangalists_likes')
+        ->whereBetween('created_at', [$currentWeekStart, $currentWeekEnd])
+        ->count();
+    $likesThisMonth = DB::table('mangalists_likes')
+        ->whereBetween('created_at', [$currentMonthStart, $currentMonthEnd])
+        ->count();
+    $likesLastMonth = DB::table('mangalists_likes')
+        ->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
+        ->count();
+    $likesThisYear = DB::table('mangalists_likes')
+        ->whereBetween('created_at', [$currentYearStart, $currentYearEnd])
+        ->count();
+    $likesLastYear = DB::table('mangalists_likes')
+        ->whereBetween('created_at', [$lastYearStart, $lastYearEnd])
+        ->count();
+
+    // Porcentagem de aumento ou queda nos likes anuais
+    $likesYearComparison = $likesLastYear > 0
+        ? round((($likesThisYear - $likesLastYear) / $likesLastYear) * 100, 2)
+        : ($likesThisYear > 0 ? 100 : 0);
+
+    // Porcentagem de aumento ou queda nos likes semanais
+    $likesWeekComparison = $likesLastWeek > 0
+        ? round((($likesThisWeek - $likesLastWeek) / $likesLastWeek) * 100, 2)
+        : ($likesThisWeek > 0 ? 100 : 0);
+
+    // Porcentagem de aumento ou queda nos likes mensais
+    $likesMonthComparison = $likesLastMonth > 0
+        ? round((($likesThisMonth - $likesLastMonth) / $likesLastMonth) * 100, 2)
+        : ($likesThisMonth > 0 ? 100 : 0);
+
+    // Retorno das estatísticas
+    return response()->json([
+        'status' => true,
+        'statistics' => [
+            'mangalists' => [
+                'last_week' => $publishedLastWeek,
+                'this_week' => $publishedThisWeek,
+                'this_month' => $publishedThisMonth,
+                'last_month' => $publishedLastMonth,
+                'this_year' => $publishedThisYear,
+                'last_year' => $publishedLastYear,
+                'week_comparison' => $weekComparison, // % de aumento ou queda semanal
+                'month_comparison' => $monthComparison, // % de aumento ou queda mensal
+                'year_comparison' => $yearComparison, // % de aumento ou queda anual
+            ],
+            'likes' => [
+                'last_week' => $likesLastWeek,
+                'this_week' => $likesThisWeek,
+                'this_month' => $likesThisMonth,
+                'last_month' => $likesLastMonth,
+                'this_year' => $likesThisYear,
+                'last_year' => $likesLastYear,
+                'week_comparison' => $likesWeekComparison, // % de aumento ou queda semanal
+                'month_comparison' => $likesMonthComparison, // % de aumento ou queda mensal
+                'year_comparison' => $likesYearComparison, // % de aumento ou queda anual
+            ],
+        ],
+    ], 200);
+}
+    
 }
