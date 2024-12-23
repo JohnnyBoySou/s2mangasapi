@@ -33,5 +33,9 @@ class MangaItem extends Model
     {
         return $this->likes()->where('user_id', $userId)->exists();
     }
-
+    protected $casts = [
+        'description' => 'array',
+        'languages' => 'array', 
+        'categories' => 'array',   
+    ];
 }

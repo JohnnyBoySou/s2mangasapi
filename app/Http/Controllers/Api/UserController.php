@@ -29,6 +29,7 @@ class UserController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                'username' => $request->username,
                 'password' => bcrypt($request->password),
                 'avatar' => $request->avatar,
                 'capa' => $request->capa,
@@ -45,7 +46,7 @@ class UserController extends Controller
                 $userData = $user->only(['id', 'name', 'email', 'avatar', 'capa', 'bio', 'coins', 'languages']);
                 return response()->json([
                     'status' => true,
-                    'message' => 'Usuário criado com sucesso',
+                    'message' => 'Conta criada com sucesso! redirecionando...',
                     'user' => $userData,
                     'token' => $token
                 ], 201);
@@ -69,7 +70,7 @@ class UserController extends Controller
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        $userData = $user->only(['id', 'name', 'email', 'avatar', 'capa', 'bio', 'coins', 'languages']);
+        $userData = $user->only(['id', 'name', 'username', 'email', 'avatar', 'capa', 'bio', 'coins', 'languages']);
 
         return response()->json([
             'status' => true,
@@ -89,7 +90,7 @@ class UserController extends Controller
             return response()->json([
                 'status' => true,
                 'user' => $user,
-                'message' => 'Usuário editado com sucesso!',
+                'message' => 'Edição realizada com sucesso.',
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
@@ -130,7 +131,7 @@ class UserController extends Controller
         }
 
         // Obtém os dados do usuário
-        $userData = $user->only(['id', 'name', 'avatar', 'capa', 'bio']);
+        $userData = $user->only(['id', 'name', 'avatar', 'capa', 'bio', 'username', 'languages']);
 
         // Adiciona a contagem de seguidores e seguidos ao array userData
         $userData['followers'] = $user->followers()->count(); // Contagem de seguidores

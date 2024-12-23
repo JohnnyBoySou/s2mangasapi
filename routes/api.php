@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CollectionController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\CommentPostController;
 use App\Http\Controllers\Api\CompletesController;
+use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LibraryController;
 use App\Http\Controllers\Api\MangaController;
@@ -104,6 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
   
   Route::post('/mangalist/{id}/like', [MangalistController::class, 'like']);
   
+  Route::post('/manga/{id}/views', [MangaController::class, 'views']);
   Route::post('/manga/{id}/like', [MangaController::class, 'like']);
   Route::get('/manga/search', [MangaController::class, 'search']);
   //DASHBOARD
@@ -111,7 +113,9 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/dashboard/mangalists', [MangalistController::class, 'statistics']);
   
   //Route::post('/wallpapers/create', [WallpaperController::class, 'store']);
+  Route::post('/mangalist/{id}/remove', [MangalistController::class, 'removeManga']);
 
+  Route::resource('/feeds', FeedController::class);
   Route::resource('/reviews', ReviewController::class);
   Route::resource('/users', controller: UserController::class);
   Route::resource('/collections', CollectionController::class);

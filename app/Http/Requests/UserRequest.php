@@ -35,6 +35,7 @@ class UserRequest extends FormRequest
     
         return [
             'name' => $isUpdate ? 'nullable' : 'required',
+            'username' => $isUpdate ? 'nullable' : 'required|unique:users,username,' . ($isUpdate ? $userID : null),
             'email' => $isUpdate ? 'nullable|email' : 'required|email|unique:users,email,' . ($isUpdate ? $userID : null),
             'password' => $isUpdate ? 'nullable|min:8' : 'required|min:8',  // Senha obrigatória apenas na criação
             'avatar' => $isUpdate ? 'nullable' : 'required',  // Avatar não obrigatório na edição
@@ -46,6 +47,7 @@ class UserRequest extends FormRequest
     {
         return [
             'name.required' => 'O nome é obrigatório',
+            'username.required' => 'O nome de usuário é obrigatório',
             'email.required' => 'O e-mail é obrigatório',
             'email.email' => 'O e-mail deve ser válido',
             'email.unique' => 'O e-mail informado já existe',

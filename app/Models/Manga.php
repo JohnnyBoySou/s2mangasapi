@@ -13,5 +13,7 @@ class Manga extends Model
         'capa',
         'user_id'
     ];
+
+    
    
 }

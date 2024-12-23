@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MangaRequest;
 use App\Models\MangaItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,7 @@ class MangaController extends Controller
     }
 
     // Criar um novo manga
-    public function store(Request $request)
+    public function store(MangaRequest $request)
     {
         // Verificando o usuário autenticado
         $user = Auth::user();
@@ -27,24 +28,7 @@ class MangaController extends Controller
 
         try {
             // Validação dos dados recebidos
-            $validated = $request->validate([
-                'uuid' => 'required|uuid|unique:mangas,uuid',
-                'name' => 'required|string|max:255',
-                'description' => 'required|string',
-                'capa' => 'required|string',
-                'categories' => 'required|array',
-                'languages' => 'required|array',
-                'release_date' => 'required|date',
-                'status' => 'required|string',
-                'type' => 'required|string|in:Mangá,Light Novel,Manhwa',
-                'year' => 'required|integer',
-            ]);
-
-            // Convertendo arrays para JSON, caso presentes
-            $validated['categories'] = json_encode($validated['categories']);
-            $validated['languages'] = json_encode($validated['languages']);
-
-            // Atribuindo o ID do usuário autenticado
+            $validated = $request->validated();
 
             $validated['user_id'] = $user->id;
             $validated['created_by'] = $user->id;
@@ -55,12 +39,10 @@ class MangaController extends Controller
             // Confirmando a transação
             DB::commit();
 
-            return response()->json(['message' => 'Manga created successfully', 'data' => $manga]);
+            return response()->json(['message' => 'Mangá criado com sucesso!', 'data' => $manga], 200);
 
         } catch (\Exception $e) {
-            // Se houver erro, desfaz as mudanças
             DB::rollBack();
-
             return response()->json(['error' => 'Erro ao criar manga', 'message' => $e->getMessage()], 500);
         }
     }
@@ -68,12 +50,26 @@ class MangaController extends Controller
     // Exibir um manga específico
     public function show($id)
     {
+
         $manga = MangaItem::findOrFail($id);
+
+        // Incrementar o contador de visualizações
+        $manga->increment('views');
+
+        // Registrar a visualização no banco (se detalhado)
+        DB::table('manga_views')->insert([
+            'manga_id' => $manga->uuid,
+            'user_id' => Auth::id(), // Nulo se o usuário não estiver autenticado
+            'ip_address' => Request::ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         return response()->json($manga);
     }
 
     // Atualizar um manga
-    public function update(Request $request, $id)
+    public function update(MangaRequest $request, $id)
     {
         // Verificando o usuário autenticado
         $user = Auth::user();
@@ -84,19 +80,10 @@ class MangaController extends Controller
         try {
             $manga = MangaItem::findOrFail($id);
 
-            // Validação dos dados da requisição
-            $validated = $request->validate([
-                'uuid' => 'sometimes|uuid',
-                'name' => 'sometimes|string|max:255',
-                'description' => 'sometimes|string',
-                'capa' => 'sometimes|string',
-                'categories' => 'sometimes|array',
-                'languages' => 'sometimes|array',
-                'release_date' => 'sometimes|date',
-                'status' => 'sometimes|string',
-                'type' => 'sometimes|string|in:Mangá,Light Novel,Manhwa',
-                'year' => 'sometimes|integer',
-            ]);
+            $validated = $request->validated();
+
+            $validated['user_id'] = $user->id;
+            $validated['created_by'] = $user->id;
 
             // Convertendo arrays para JSON, caso presentes
             if (isset($validated['categories'])) {
@@ -116,7 +103,7 @@ class MangaController extends Controller
             // Confirmando a transação
             DB::commit();
 
-            return response()->json(['message' => 'Manga updated successfully', 'data' => $manga]);
+            return response()->json(['message' => 'Mangá atualizado com sucesso!', 'data' => $manga]);
 
         } catch (\Exception $e) {
             // Se houver erro, desfaz as mudanças
@@ -344,8 +331,6 @@ class MangaController extends Controller
         ], 200);
     }
 
-
-
     public function user(): JsonResponse
     {
         $user = Auth::user();
@@ -359,4 +344,45 @@ class MangaController extends Controller
         ], 200);
     }
 
+    public function views($id): JsonResponse
+    {
+        // Validar se o mangá existe
+        $manga = MangaItem::findOrFail($id);
+
+        // Períodos
+        $startOfWeek = now()->startOfWeek();
+        $endOfWeek = now()->endOfWeek();
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+        $startOfYear = now()->startOfYear();
+        $endOfYear = now()->endOfYear();
+
+        // Consultar visualizações detalhadas
+        $viewsPerWeek = DB::table('manga_views')
+            ->where('manga_id', $id)
+            ->whereBetween('created_at', [$startOfWeek, $endOfWeek])
+            ->count();
+
+        $viewsPerMonth = DB::table('manga_views')
+            ->where('manga_id', $id)
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $viewsPerYear = DB::table('manga_views')
+            ->where('manga_id', $id)
+            ->whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->count();
+
+        // Retornar resposta JSON
+        return response()->json([
+            'status' => true,
+            'manga_id' => $id,
+            'manga_name' => $manga->name,
+            'views' => [
+                'this_week' => $viewsPerWeek,
+                'this_month' => $viewsPerMonth,
+                'this_year' => $viewsPerYear,
+            ],
+        ]);
+    }
 }
