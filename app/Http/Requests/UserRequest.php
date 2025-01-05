@@ -19,12 +19,12 @@ class UserRequest extends FormRequest
 
     protected function failedValidation(Validator $validator)
     {
+        $errors = implode(', ', $validator->errors()->all());
         throw new HttpResponseException(response()->json([
             'status' => false,
-            'erros' => $validator->errors()
+            'message' => $errors,
         ], 422));
     }
-
 
     public function rules(): array
     {
@@ -35,26 +35,24 @@ class UserRequest extends FormRequest
     
         return [
             'name' => $isUpdate ? 'nullable' : 'required',
-            'username' => $isUpdate ? 'nullable' : 'required|unique:users,username,' . ($isUpdate ? $userID : null),
             'email' => $isUpdate ? 'nullable|email' : 'required|email|unique:users,email,' . ($isUpdate ? $userID : null),
             'password' => $isUpdate ? 'nullable|min:8' : 'required|min:8',  // Senha obrigatória apenas na criação
-            'avatar' => $isUpdate ? 'nullable' : 'required',  // Avatar não obrigatório na edição
-            'capa' => $isUpdate ? 'nullable' : 'required',    // Capa não obrigatória na edição
+            'birthdate' => $isUpdate ? 'nullable' :'required|date|before:today', // Novo campo obrigatório
         ];
     }
-
+   
     public function messages(): array
     {
         return [
             'name.required' => 'O nome é obrigatório',
-            'username.required' => 'O nome de usuário é obrigatório',
             'email.required' => 'O e-mail é obrigatório',
             'email.email' => 'O e-mail deve ser válido',
             'email.unique' => 'O e-mail informado já existe',
             'password.required' => 'A senha é obrigatória',
             'password.min' => 'A senha deve ter pelo menos :min caracteres',
-            'avatar.required' => 'O avatar é obrigatória',
-            'capa.required' => 'A capa é obrigatória',
+            'birthdate.required' => 'A data de nascimento é obrigatória',
+            'birthdate.date' => 'A data de nascimento deve ser uma data válida',
+            'birthdate.before' => 'A data de nascimento deve ser anterior a hoje',
         ];
     }
 }

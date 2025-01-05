@@ -18,25 +18,24 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+
         'name',
         'email',
-        'username',
-        'bio',
-        'capa',
         'avatar',
+        'birthdate',
+        'password',
+        
         'collections',
+        'marks',
+
         'progress',
         'complete',
         'likes',
         'follows',
-        'marks',
-        'history',
-        'diamonds',
+        
         'coins',
         'languages',
-        'preferences',
         'genres',
-        'password',
     ];
 
     /**
@@ -58,6 +57,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'languages' => 'array',  // Se languages for um JSON, você pode fazer o casting para array
         'genres' => 'array',     // Faz o mesmo para genres, caso seja JSON
+        'birthdate' => 'date',  // Faz casting do campo birthdate para o tipo date
     ];
 
     /**

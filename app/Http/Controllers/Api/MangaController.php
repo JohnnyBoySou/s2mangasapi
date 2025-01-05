@@ -7,13 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class MangaController extends Controller
 {
     // Exibir todos os mangas
     public function index()
     {
-        $mangas = MangaItem::all();
+        $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count')  // Seleciona os campos desejados
+            ->paginate(10);
         return response()->json($mangas);
     }
 
@@ -48,25 +51,49 @@ class MangaController extends Controller
     }
 
     // Exibir um manga específico
-    public function show($id)
+    public function show($id, Request $request)
     {
-
         $manga = MangaItem::findOrFail($id);
+        $lang = $request->get('lang', 'en');
+        $description = $manga->getDescriptionByLocale($lang);
+        $manga->increment('views_count'); // Incrementa o contador de views
+        $manga->description = $description;
 
-        // Incrementar o contador de visualizações
-        $manga->increment('views');
+        $mangauuid = $manga->uuid;
 
-        // Registrar a visualização no banco (se detalhado)
-        DB::table('manga_views')->insert([
-            'manga_id' => $manga->uuid,
-            'user_id' => Auth::id(), // Nulo se o usuário não estiver autenticado
-            'ip_address' => Request::ip(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Fetch covers
+        $covers = $this->getCovers($mangauuid);
+        $manga->covers = $covers;
 
-        return response()->json($manga);
+        return response()->json(
+            $manga,
+        );
     }
+
+    private function getCovers($mangaID)
+    {
+        try {
+            $response = Http::get('https://api.mangadex.org/cover', [
+                'manga' => [$mangaID]
+            ]);
+            $data = $response->json()['data'];
+            return $this->formatCoverData($data, $mangaID);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function formatCoverData($covers, $mangaID)
+    {
+        return array_map(function ($cover) use ($mangaID) {
+            return [
+                'img' => "https://uploads.mangadex.org/covers/{$mangaID}/{$cover['attributes']['fileName']}",
+                'volume' => $cover['attributes']['volume'],
+                'id' => $cover['id']
+            ];
+        }, $covers);
+    }
+
 
     // Atualizar um manga
     public function update(MangaRequest $request, $id)
@@ -139,6 +166,7 @@ class MangaController extends Controller
     //PESQUISAR
     public function search(Request $request)
     {
+        // Inicia a query com o modelo MangaItem
         $query = MangaItem::query();
 
         // Verificar se o nome foi enviado
@@ -156,14 +184,24 @@ class MangaController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        // Retornar os resultados paginados
-        $results = $query->paginate(10);
+        // Seleciona apenas as colunas desejadas e adiciona paginação
+        $results = $query->select('uuid', 'name', 'capa', 'views_count')
+            ->orderBy('views_count', 'desc') // Ordena pela quantidade de visualizações
+            ->paginate(10); // Pagina com 10 itens por página
 
+        if ($results->isEmpty()) {
+            return response()->json([
+                'status' => true,
+                'data' => [],
+            ]);
+        }
+        // Retorna a resposta como JSON
         return response()->json([
-            'success' => true,
+            'status' => true,
             'data' => $results,
-        ]);
+        ], 200);
     }
+
 
     //CURTIR
     public function like($id): JsonResponse
@@ -385,4 +423,38 @@ class MangaController extends Controller
             ],
         ]);
     }
+
+
+    public function top()
+    {
+        // Paginação com 10 itens por página
+        $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count')
+            ->orderBy('views_count', 'desc')  // Ordena pela quantidade de visualizações
+            ->paginate(10);  // Pagina com 10 mangás por página
+
+        return response()->json($mangas);
+    }
+    // Listar os mangás mais visualizados na semana
+    public function weekend()
+    {
+        $oneWeekAgo = Carbon::now()->subWeek();
+
+        // Paginação com 10 itens por página
+        $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count', 'id')
+            ->where('updated_at', '>=', $oneWeekAgo)
+            ->orderBy('views_count', 'desc')
+            ->paginate(10);  // Pagina com 10 mangás por página
+
+        return response()->json($mangas);
+    }
+    public function new()
+    {
+        // Paginação com 10 itens por página
+        $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count', 'created_at')  // Seleciona os campos desejados
+            ->orderBy('created_at', 'desc')  // Ordena pelos mais recentes
+            ->paginate(10);  // Pagina com 10 mangás por página
+
+        return response()->json($mangas);
+    }
+
 }

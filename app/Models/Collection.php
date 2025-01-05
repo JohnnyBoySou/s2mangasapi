@@ -19,7 +19,12 @@ class Collection extends Model
         'user_id',
     ];
 
-    public function likes()
+    protected $casts = [
+        'mangas_id' => 'array',
+    ];
+    protected $attributes = [
+        'mangas_id' => '[]', // Valor padrão como array vazio
+    ];    public function likes()
     {
         return $this->hasMany(CollectionLike::class, 'collection_id');
     }

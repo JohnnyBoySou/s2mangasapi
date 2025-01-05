@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class MangaItem extends Model
 {
     use HasFactory;
-
-    protected $table = 'mangas';  // A tabela 'mangas' será usada para o modelo MangaItem
+    protected $table = 'mangas';  
     protected $fillable = [
-        'uuid',  // Adicionando o campo uuid
+        'uuid',  
         'name', 
         'description', 
         'capa', 
@@ -33,9 +32,21 @@ class MangaItem extends Model
     {
         return $this->likes()->where('user_id', $userId)->exists();
     }
+
     protected $casts = [
         'description' => 'array',
         'languages' => 'array', 
         'categories' => 'array',   
     ];
+
+    public function getDescriptionByLocale($locale)
+    {
+        // Verificar se o idioma existe e, se não, retornar o idioma padrão (en)
+        if (isset($this->description[$locale])) {
+            return $this->description[$locale];
+        }
+
+        // Caso não encontre, tenta retornar o valor para 'en' ou retorna um texto padrão
+        return $this->description['en'] ?? 'Description not available';
+    }
 }

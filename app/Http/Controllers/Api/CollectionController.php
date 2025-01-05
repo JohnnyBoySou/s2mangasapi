@@ -46,18 +46,18 @@ class CollectionController extends Controller
     public function show($id): JsonResponse
     {
         $user = Auth::user();
-
+    
         try {
             // Recupera a coleção com base no ID
             $collection = Collection::where('id', $id)->first();
-
+    
             if (!$collection) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Coleção não encontrada.',
                 ], 404);
             }
-
+    
             // Verifica se a coleção é privada e o usuário atual não é o dono
             if ($collection->status === 'private' && $collection->user_id !== $user->id) {
                 return response()->json([
@@ -65,8 +65,16 @@ class CollectionController extends Controller
                     'message' => 'Essa coleção é privada.',
                 ], 403); // Código 403 para acesso proibido
             }
-
-            // Se o usuário for o dono ou a coleção for pública, retorna os dados
+    
+            // Converte mangas_id para array se não for
+            $collection->mangas_id = is_string($collection->mangas_id)
+                ? json_decode($collection->mangas_id, true) ?? []
+                : $collection->mangas_id;
+    
+            // Adiciona a data formatada
+            $collection->date = \Carbon\Carbon::parse($collection->updated_at)->diffForHumans();
+    
+            // Retorna os dados
             return response()->json([
                 'status' => true,
                 'collection' => $collection,
@@ -79,6 +87,7 @@ class CollectionController extends Controller
             ], 400);
         }
     }
+    
 
 
     public function store(CollectionRequest $request): JsonResponse
@@ -186,37 +195,42 @@ class CollectionController extends Controller
     {
         $user = Auth::user();
         DB::beginTransaction();
-
+    
         try {
-            // Recupera a coleção com base no ID fornecido
-            // Verifica se a coleção existe e pertence ao usuário autenticado
+            // Recupera a coleção do usuário
             $collection = Collection::where('id', $id)
                 ->where('user_id', $user->id)
                 ->first();
-
+    
             if (!$collection) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Coleção não encontrada ou não autorizada',
                 ], 404);
             }
-
-            // Obtém o array de mangas_id da coleção
-            $mangas = json_decode($collection->mangas_id, true) ?? []; // Converte o JSON para um array
-
+    
+            // Obtém os mangás da coleção
+            $mangas = $collection->mangas_id ?? [];
+            if (!is_array($mangas)) {
+                $mangas = json_decode($mangas, true) ?? [];
+            }
+    
             $mangaId = $request->input('id');
             $mangaName = $request->input('name');
             $mangaCapa = $request->input('capa');
-
+    
             // Verifica se o mangá já está na coleção
-            $mangaIndex = array_search($mangaId, array_column($mangas, 'id'));
-
+            $mangaIndex = false;
+            if (!empty($mangas) && is_array($mangas)) {
+                $mangaIndex = array_search($mangaId, array_column($mangas, 'id'));
+            }
+    
             if ($mangaIndex !== false) {
                 // Mangá encontrado, remove-o da coleção
                 unset($mangas[$mangaIndex]);
                 $mangas = array_values($mangas); // Reindexa o array
                 $message = 'Mangá removido da coleção';
-                $added = false; // Retorno para remoção
+                $added = false;
             } else {
                 // Mangá não encontrado, adiciona-o à coleção
                 $mangas[] = [
@@ -225,18 +239,18 @@ class CollectionController extends Controller
                     'capa' => $mangaCapa,
                 ];
                 $message = 'Mangá adicionado à coleção';
-                $added = true; // Retorno para adição
+                $added = true;
             }
-
-            // Atualiza a coleção com o novo array de mangas
+    
+            // Atualiza a coleção
             $collection->mangas_id = json_encode($mangas);
             $collection->save();
-
+    
             DB::commit();
-
+    
             return response()->json([
                 'status' => true,
-                'data' => $added, // Retorna true se o mangá foi adicionado e false se foi removido
+                'data' => $added,
                 'collection' => $collection,
                 'message' => $message,
             ], 200);
@@ -249,6 +263,7 @@ class CollectionController extends Controller
             ], 400);
         }
     }
+    
     public function toggleFixed($id): JsonResponse
     {
         $user = Auth::user();
@@ -505,20 +520,39 @@ class CollectionController extends Controller
     public function userCollections(): JsonResponse
     {
         $user = Auth::user();
-        
-        // Obtém as coleções do usuário pelo ID fornecido e com status 'public'
-        $collections = Collection::where('user_id', $user->id) // Corrigido para o uso correto do 'where'
+    
+        // Obtém as coleções do usuário pelo ID fornecido e ordena pela propriedade 'fixed'
+        $collections = Collection::where('user_id', $user->id)
+            ->orderByDesc('fixed') // Ordena pela propriedade 'fixed' primeiro
             ->paginate(20);
     
-        // Remove campos indesejados de cada coleção
         $collections->each(function ($collection) {
-            $collection->makeHidden(['mangas_id', 'genres', 'user_id']); // Faz os campos invisíveis
+            // Garante que mangas_id seja tratado como array
+            $mangas = $collection->mangas_id ?? []; // Inicializa como array vazio se for null
+    
+            if (is_string($mangas)) {
+                $mangas = json_decode($mangas, true) ?? []; // Decodifica para array; fallback para array vazio
+            }
+    
+            if (!is_array($mangas)) {
+                $mangas = []; // Garante que é sempre um array
+            }
+    
+            // Oculta os campos desnecessários na resposta
+            $collection->makeHidden(['mangas_id', 'genres', 'user_id', 'created_at', 'updated_at']);
+    
+            // Calcula o total de mangás
+            $collection->total_mangas = count($mangas);
+    
+            // Adiciona o campo 'update_date' formatado com Carbon
+            $collection->date = \Carbon\Carbon::parse($collection->updated_at)->diffForHumans();
         });
     
         // Verifica se há coleções públicas para o usuário
         if ($collections->isEmpty()) {
             return response()->json([
                 'status' => false,
+                'collections' => [],
                 'message' => 'Nenhuma coleção pública encontrada para este usuário.',
             ], 404);
         }

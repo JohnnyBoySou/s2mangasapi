@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\MangaController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProgressController;
 use App\Http\Controllers\Api\LikesController;
-use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\MangalistController;
 use App\Http\Controllers\Api\RecoveryPassword;
 use App\Http\Controllers\Api\StatsController;
@@ -19,10 +18,11 @@ use App\Http\Controllers\Api\StatusController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\WallpaperController;
+use App\Http\Controllers\Api\ChapterController;
 use Illuminate\Support\Facades\Route;
 
 // Rotas públicas
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [UserController::class, 'login']);
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/forget-password-code', [RecoveryPassword::class, 'forgetPasswordCode']);
 Route::post('/forget-password-validate', [RecoveryPassword::class, 'forgetPasswordValidate']);
@@ -51,9 +51,10 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/user/genres', [UserController::class, 'genres']);
   Route::get('/user/mangalists', [MangalistController::class, 'user']);
   Route::get('/user/manga', [MangaController::class, 'user']);
+  Route::get('/user/wallpapers', [WallpaperController::class, 'user']);
 
   Route::get('/user/collections', [CollectionController::class, 'userCollections']);
-  Route::post('/users/logout', [LoginController::class, 'logout']);
+  Route::post('/users/logout', [UserController::class, 'logout']);
   Route::put('/users/edit', [UserController::class, 'update']);
   Route::delete('/users/exclude', [UserController::class, 'destroy']);
   Route::get('/users/search', [UserController::class, 'search']);
@@ -67,7 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/collections/search/{search}', [CollectionController::class, 'search']);
   Route::post('/collections/{id}/like', [CollectionController::class, 'toggleLike']);
   Route::get('/collections/most-liked', action: [CollectionController::class, 'mostLikedCollections']);
-  Route::post('/collection/fixed/{collection}', [CollectionController::class, 'toggleFixed']);
+  Route::post('/collections/{collection}/fixed', [CollectionController::class, 'toggleFixed']);
   Route::post('/collections/{collectionId}/upload-cover', [CollectionController::class, 'uploadCover']);
 
   Route::get('/library', [LibraryController::class, 'index']);
@@ -108,12 +109,21 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::post('/manga/{id}/views', [MangaController::class, 'views']);
   Route::post('/manga/{id}/like', [MangaController::class, 'like']);
   Route::get('/manga/search', [MangaController::class, 'search']);
+  Route::get('/manga/{id}/chapters', [ChapterController::class, 'listChapters']);
+  Route::get('/manga/{id}/pages', [ChapterController::class, 'listPages']);
+
+  Route::get('/manga/top', [MangaController::class, 'top']);
+  Route::get('/manga/weekend', [MangaController::class, 'weekend']);
+  Route::get('/manga/new', [MangaController::class, 'new']);
+  
   //DASHBOARD
   Route::get('/dashboard/mangas', [MangaController::class, 'statistics']);
   Route::get('/dashboard/mangalists', [MangalistController::class, 'statistics']);
   
   //Route::post('/wallpapers/create', [WallpaperController::class, 'store']);
   Route::post('/mangalist/{id}/remove', [MangalistController::class, 'removeManga']);
+  Route::put('/wallpaper/{id}/remove', [WallpaperController::class, 'remove']);
+  Route::post('/wallpaper/{id}/add', [WallpaperController::class, 'add']);
 
   Route::resource('/feeds', FeedController::class);
   Route::resource('/reviews', ReviewController::class);

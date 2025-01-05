@@ -15,40 +15,81 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
 
+    public function login(Request $request): JsonResponse
+    {
+
+        //valida email e senha
+        if (
+            Auth::attempt([
+                "email" => $request->email,
+                "password" => $request->password
+            ])
+        ) {
+            //Pegar dados do usuario
+
+            $user = Auth::user();
+
+            $token = $request->user()->createToken('auth_token')->plainTextToken;
+            $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages']);
+            $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
+              
+            return response()->json([
+                'status' => true,
+                'message' => 'Login realizado com sucesso',
+                'user' => $userData,
+                'token' => $token
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Login ou senha inválidos'
+            ], 401);
+        }
+    }
+    public function logout(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $user->tokens()->delete();
+            return response()->json([
+                'status' => true,
+                'message' => 'Logout efetuado com sucesso'
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status'=> false,
+                'message' => 'Erro ao efetuar o logout',
+            ], 400);
+        }
+    }
     public function register(UserRequest $request): JsonResponse
     {
-        /*
-         * Cria um usuário com os campos definidos na model $fillable
-         * E retorna os dados do novo usuário, tratamentos de erro em UserRequest, requests/UserRequests
-         * @param \App\Models\User
-         * @return \Illuminate\Http\JsonResponse
-         */
         DB::beginTransaction();
 
         try {
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'username' => $request->username,
                 'password' => bcrypt($request->password),
                 'avatar' => $request->avatar,
-                'capa' => $request->capa,
-                'bio' => $request->bio,
-                'languages' => json_encode($request->languages),
-                'genres' => json_encode($request->genres), // Converte o array em JSON
+                'languages' => $request->languages,
+                'genres' =>  $request->genres,
+                'birthdate' => $request->birthdate, // Adicionado o campo birthdate
             ]);
 
-            //confirma cadastro
             DB::commit();
 
             if (Auth::attempt(["email" => $request->email, "password" => $request->password])) {
                 $token = $user->createToken('auth_token')->plainTextToken;
-                $userData = $user->only(['id', 'name', 'email', 'avatar', 'capa', 'bio', 'coins', 'languages']);
+                $userData = $user->only(['id', 'name', 'email','avatar','coins', 'languages', ]);
+                $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
+
                 return response()->json([
                     'status' => true,
                     'message' => 'Conta criada com sucesso! redirecionando...',
                     'user' => $userData,
-                    'token' => $token
+                    'token' => $token,
                 ], 201);
             } else {
                 return response()->json([
@@ -61,16 +102,16 @@ class UserController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Falha ao criar o usuário',
-                'e' => $e
+                'error' => $e->getMessage(),
             ], 400);
         }
-
-
     }
+
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        $userData = $user->only(['id', 'name', 'username', 'email', 'avatar', 'capa', 'bio', 'coins', 'languages']);
+        $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'birthdate']);
+        $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
 
         return response()->json([
             'status' => true,
@@ -85,11 +126,13 @@ class UserController extends Controller
 
         try {
             $user->update($request->only($user->getFillable()));
+            $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'birthdate']);
+            $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
 
             DB::commit();
             return response()->json([
                 'status' => true,
-                'user' => $user,
+                'user' => $userData,
                 'message' => 'Edição realizada com sucesso.',
             ], 200);
         } catch (Exception $e) {
@@ -99,7 +142,6 @@ class UserController extends Controller
                 'message' => 'Falha ao editar o usuário.',
             ], 400);
         }
-
     }
 
     public function destroy(): JsonResponse
@@ -109,12 +151,12 @@ class UserController extends Controller
             $user->delete();
             return response()->json([
                 'status' => true,
-                'message' => 'Usuário excluido com sucesso',
+                'message' => 'Usuário excluído com sucesso',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'status' => true,
-                'message' => 'Usuário não excluido',
+                'status' => false,
+                'message' => 'Usuário não excluído',
             ], 400);
         }
     }
