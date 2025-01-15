@@ -38,6 +38,7 @@ class UserRequest extends FormRequest
             'email' => $isUpdate ? 'nullable|email' : 'required|email|unique:users,email,' . ($isUpdate ? $userID : null),
             'password' => $isUpdate ? 'nullable|min:8' : 'required|min:8',  // Senha obrigatória apenas na criação
             'birthdate' => $isUpdate ? 'nullable' :'required|date|before:today', // Novo campo obrigatório
+            'genres' => $isUpdate ? 'nullable' :'required|array', // Novo campo obrigatório
         ];
     }
    
@@ -53,6 +54,7 @@ class UserRequest extends FormRequest
             'birthdate.required' => 'A data de nascimento é obrigatória',
             'birthdate.date' => 'A data de nascimento deve ser uma data válida',
             'birthdate.before' => 'A data de nascimento deve ser anterior a hoje',
+            'genres.required' => 'Os gêneros são obrigatórios',
         ];
     }
 }

@@ -33,14 +33,14 @@ class MangaRequest extends FormRequest
         return [
             'uuid' => $isUpdate ? 'nullable|uuid|unique:mangas,uuid,' . $this->route('manga') : 'required|uuid|unique:mangas,uuid', // UUID único, mas permite update
             'name' => $isUpdate ? 'nullable|string|max:255' : 'required|string|max:255',  // "name" pode ser opcional no update
-            'description' => $isUpdate ? 'nullable|string ':'required|string',  // "description" é obrigatória
+            'description' => $isUpdate ? 'nullable|string ':'required|array',  // "description" é obrigatória
             'capa' => $isUpdate ? 'nullable|string' : 'required|string',  // "capa" é opcional no update
             'categories' => $isUpdate ? 'nullable|string ':'required|array',  // "categories" é obrigatória
             'languages' => $isUpdate ? 'nullable|string ':'required|array',  // "languages" é obrigatória
             'release_date' => $isUpdate ? 'nullable|string ':'required|date',  // "release_date" é obrigatória
             'status' => $isUpdate ? 'nullable|string ':'required|string',  // "status" é obrigatório
             'type' => $isUpdate ? 'nullable|string ':'required|string|in:Mangá,Light Novel,Manhwa',  // "type" deve ser um desses valores
-            'year' => $isUpdate ? 'nullable|string ': 'required|integer',  // "year" é obrigatório e deve ser um número
+            'year' => $isUpdate ? 'nullable|string ': 'nullable|integer',  // "year" é obrigatório e deve ser um número
         ];
     }
 
@@ -54,7 +54,7 @@ class MangaRequest extends FormRequest
             'name.string' => 'O campo nome deve ser uma string.',
             'name.max' => 'O campo nome não pode ter mais que 255 caracteres.',
             'description.required' => 'O campo descrição é obrigatório.',
-            'description.string' => 'O campo descrição deve ser uma string.',
+            'description.array' => 'O campo descrição deve ser uma string.',
             'capa.required' => 'O campo capa é obrigatório.',
             'capa.string' => 'O campo capa deve ser uma string.',
             'categories.required' => 'O campo categorias é obrigatório.',
@@ -68,7 +68,6 @@ class MangaRequest extends FormRequest
             'type.required' => 'O campo tipo é obrigatório.',
             'type.string' => 'O campo tipo deve ser uma string.',
             'type.in' => 'O campo tipo deve ser um dos seguintes valores: Mangá, Light Novel, Manhwa.',
-            'year.required' => 'O campo ano é obrigatório.',
             'year.integer' => 'O campo ano deve ser um número inteiro.',
         ];
     }

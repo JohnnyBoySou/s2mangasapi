@@ -10,7 +10,7 @@ class ChapterController extends Controller
 {
     public function listChapters($id, Request $request)
     {
-        $lg = $request->query('lg', 'pt-br'); // Idioma padrão
+        $lg = $request->query('lang', 'pt-br'); // Idioma padrão
         $order = $request->query('order', 'desc'); // Ordem dos capítulos
         $page = $request->query('page', 0); // Página padrão
         $limit = $request->query('limit', 20);
@@ -18,7 +18,7 @@ class ChapterController extends Controller
 
         try {
             // Chamada à API externa
-            $response = Http::get("https://api.mangadex.org/manga/{$id}/feed", [
+            $response = Http::get("https://api.mangadex.org/manga/{$id}/feed?includeEmptyPages=0&includeFuturePublishAt=0&includeExternalUrl=0", [
                 'limit' => $limit,
                 'offset' => $offset,
                 'translatedLanguage' => [$lg],
@@ -48,24 +48,30 @@ class ChapterController extends Controller
 
     private function transformChapterData($chapters, $total, $limit, $page, $offset, $lg)
     {
-        $transformedChapters = is_array($chapters) ? array_map(function ($chapter) {
+        $transformedChapters = is_array($chapters) ? array_filter(array_map(function ($chapter) {
             $attributes = $chapter['attributes'] ?? [];
 
             $publishDate = \Carbon\Carbon::parse($attributes['publishAt'] ?? now())
-                ->locale('pt-BR')
-                ->isoFormat('D MMM YYYY');
+            ->locale('pt-BR')
+            ->isoFormat('D MMM YYYY');
+
+            $pages = $attributes['pages'] ?? 0;
+
+            if ($pages == 0) {
+            return null;
+            }
 
             return [
-                'id' => $chapter['id'] ?? null,
-                'title' => $attributes['title'] ?? 'Capítulo ' . ($attributes['chapter'] ?? 0),
-                'chapter' => isset($attributes['chapter']) ? (float) $attributes['chapter'] : 0,
-                'volume' => isset($attributes['volume']) ? (float) $attributes['volume'] : null,
-                'language' => [$attributes['translatedLanguage'] ?? ''],
-                'publish_date' => $publishDate,
-                'pages' => $attributes['pages'] ?? null,
+            'id' => $chapter['id'] ?? null,
+            'title' => $attributes['title'] ?? 'Capítulo ' . ($attributes['chapter'] ?? 0),
+            'chapter' => isset($attributes['chapter']) ? (float) $attributes['chapter'] : 0,
+            'volume' => isset($attributes['volume']) ? (float) $attributes['volume'] : null,
+            'language' => [$attributes['translatedLanguage'] ?? ''],
+            'publish_date' => $publishDate,
+            'pages' => $pages,
             ];
-        }, $chapters) : [];
-
+        }, $chapters)) : [];
+        $transformedChapters = array_values($transformedChapters);
         return [
             'total' => $total,
             'limit' => $limit,

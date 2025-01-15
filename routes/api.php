@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LibraryController;
 use App\Http\Controllers\Api\MangaController;
+use App\Http\Controllers\Api\MangadexController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProgressController;
 use App\Http\Controllers\Api\LikesController;
@@ -103,6 +104,10 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/search/collection/{search}', [CollectionController::class, 'searchAll']);
   Route::get('/search/user', [UserController::class, 'search']);
   Route::get('/search/manga', [MangaController::class, 'search']);
+
+  Route::get('/mangadex/{id}', [MangadexController::class, 'search']);  
+  Route::get('/mangadex/{id}/covers', [MangaController::class, 'getCovers']);  
+  Route::get('/mangadex/search/{name}', [MangadexController::class, 'searchByName']);
   
   Route::post('/mangalist/{id}/like', [MangalistController::class, 'like']);
   
@@ -115,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/manga/top', [MangaController::class, 'top']);
   Route::get('/manga/weekend', [MangaController::class, 'weekend']);
   Route::get('/manga/new', [MangaController::class, 'new']);
+  Route::get('/manga/feed', [MangaController::class, 'feed']);
   
   //DASHBOARD
   Route::get('/dashboard/mangas', [MangaController::class, 'statistics']);

@@ -355,7 +355,7 @@ class CollectionController extends Controller
             $collection->makeHidden(['mangas_id', 'genres', 'user_id']);
 
             // Fazer o parse da string mangas_id em um array de objetos
-            $mangasArray = json_decode($collection->mangas_id, true); // Passando true para obter um array associativo
+            $mangasArray = is_string($collection->mangas_id) ? json_decode($collection->mangas_id, true) : $collection->mangas_id; // Passando true para obter um array associativo
 
             // Calcular o total de mangas
             $collection->total_mangas = is_array($mangasArray) ? count($mangasArray) : 0; // Verifica se é um array antes de contar

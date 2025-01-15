@@ -30,7 +30,7 @@ class UserController extends Controller
             $user = Auth::user();
 
             $token = $request->user()->createToken('auth_token')->plainTextToken;
-            $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages']);
+            $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'genres']);
             $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
               
             return response()->json([
@@ -75,7 +75,7 @@ class UserController extends Controller
                 'avatar' => $request->avatar,
                 'languages' => $request->languages,
                 'genres' =>  $request->genres,
-                'birthdate' => $request->birthdate, // Adicionado o campo birthdate
+                'birthdate' => $request->birthdate, 
             ]);
 
             DB::commit();
@@ -110,7 +110,7 @@ class UserController extends Controller
     public function index(): JsonResponse
     {
         $user = Auth::user();
-        $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'birthdate']);
+        $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'birthdate', 'genres']);
         $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
 
         return response()->json([
@@ -126,7 +126,7 @@ class UserController extends Controller
 
         try {
             $user->update($request->only($user->getFillable()));
-            $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'birthdate']);
+            $userData = $user->only(['id', 'name', 'email', 'avatar', 'coins', 'languages', 'birthdate', 'genres']);
             $userData['birthdate'] = $user->birthdate ? $user->birthdate->format('d/m/Y') : null;
 
             DB::commit();
@@ -173,7 +173,7 @@ class UserController extends Controller
         }
 
         // Obtém os dados do usuário
-        $userData = $user->only(['id', 'name', 'avatar', 'capa', 'bio', 'username', 'languages']);
+        $userData = $user->only(['id', 'name', 'avatar', 'capa', 'bio', 'username', 'languages', 'genres']);
 
         // Adiciona a contagem de seguidores e seguidos ao array userData
         $userData['followers'] = $user->followers()->count(); // Contagem de seguidores
@@ -260,7 +260,6 @@ class UserController extends Controller
         return response()->json(['status' => true, 'followers' => $followers], 200);
     }
 
-
     public function following($id): JsonResponse
     {
         $user = User::find($id);
@@ -284,7 +283,6 @@ class UserController extends Controller
         return response()->json(['status' => true, 'following' => $following], 200);
     }
 
-
     public function isFollowing($id): JsonResponse
     {
         $user = Auth::user();
@@ -292,7 +290,6 @@ class UserController extends Controller
 
         return response()->json(['status' => true, 'is_following' => $isFollowing], 200);
     }
-
 
     public function toggleFollowing($id): JsonResponse
     {
@@ -323,7 +320,6 @@ class UserController extends Controller
             return response()->json(['status' => true, 'message' => 'Começou a seguir.'], 200);
         }
     }
-
 
     public function search(Request $request): JsonResponse
     {
@@ -356,7 +352,6 @@ class UserController extends Controller
             'users' => $users,
         ], 200);
     }
-
 
 }
 
