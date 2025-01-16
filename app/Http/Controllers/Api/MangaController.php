@@ -16,9 +16,9 @@ class MangaController extends Controller
     public function index()
     {
         $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count', 'id')  // Seleciona os campos desejados
-        ->orderBy('created_at', 'desc')  // Ordena pela quantidade de visualizações
-        ->paginate(10);  // Pagi
-           
+            ->orderBy('created_at', 'desc')  // Ordena pela quantidade de visualizações
+            ->paginate(10);  // Pagi
+
         return response()->json($mangas);
     }
 
@@ -213,7 +213,6 @@ class MangaController extends Controller
             'data' => $results,
         ], 200);
     }
-
     //CURTIR
     public function like($id): JsonResponse
     {
@@ -467,37 +466,30 @@ class MangaController extends Controller
         return response()->json($mangas);
     }
     public function feed()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
+    $userCategories = collect($user->genres);  // Converte para uma coleção
 
-        // Recupera as categorias favoritas do usuário
-        $userCategories = $user->genres; // Se o campo agora é `categories`, certifique-se de ajustá-lo aqui também
-
-        // Verifica se o usuário tem categorias favoritas
-        if (empty($userCategories)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Nenhuma categoria favorita encontrada para este usuário.',
-            ], 404);
-        }
-
-        // Filtra os mangás com base nas categorias favoritas
-        $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count', 'id')
-            ->where(function ($query) use ($userCategories) {
-                foreach ($userCategories as $category) {
-                    $query->orWhereJsonContains('categories', $category);
-                }
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        return response()->json($mangas);
+    if ($userCategories->isEmpty()) {  // Verifica se está vazio com a coleção
+        return response()->json([
+            'status' => false,
+            'message' => 'Nenhuma categoria favorita encontrada para este usuário.',
+        ], 404);
     }
 
+    // Pegando os IDs das categorias favoritas do usuário (campo 'id')
+    $categoryIds = $userCategories->pluck('id')->toArray();
 
+    $mangas = MangaItem::select('uuid', 'name', 'capa', 'views_count', 'id')
+        ->where(function ($query) use ($categoryIds) {
+            foreach ($categoryIds as $categoryId) {
+                $query->orWhereJsonContains('categories', $categoryId);
+            }
+        })
+        ->orderBy('created_at', 'desc')
+        ->paginate(10);
 
-
-
-
-
+    return response()->json($mangas);
+}
+    
 }
